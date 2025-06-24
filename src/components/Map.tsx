@@ -1,6 +1,9 @@
 "use client";
 
 import "leaflet/dist/leaflet.css";
+import "leaflet-defaulticon-compatibility/dist/leaflet-defaulticon-compatibility.css";
+import "leaflet-defaulticon-compatibility";
+
 import { MapContainer, TileLayer, GeoJSON } from "react-leaflet";
 import { FeatureCollection } from "geojson";
 
