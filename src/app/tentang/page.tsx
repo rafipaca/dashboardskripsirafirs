@@ -1,31 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import Breadcrumbs from "@/components/Breadcrumbs";
-import Navigation from "@/components/Navigation";
-import { 
-  Card, 
-  CardContent, 
-  CardHeader, 
-  CardTitle 
-} from "@/components/ui/card";
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
-} from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import Image from "next/image";
 import { AppRoutes } from "@/utils/router";
 
 export default function About() {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background about-page">
       {/* Navbar */}
-      <Navigation />
+
       
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
@@ -33,128 +16,246 @@ export default function About() {
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold tracking-tight">Tentang</h1>
-            <p className="text-muted-foreground">
-              Informasi mengenai latar belakang dan tujuan penelitian
+            <p className="about-subtitle">
+              Informasi mengenai latar belakang dan tujuan penelitian GWNBR untuk pneumonia balita
             </p>
           </div>
-          <Breadcrumbs />
         </div>
         
         {/* About Content */}
         <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Latar Belakang</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground">
+          <div className="about-main-card">
+            <div className="about-card-header">
+              <h2 className="about-card-title">Latar Belakang</h2>
+            </div>
+            <div className="about-card-content">
+              <p className="about-text">
                 Pneumonia merupakan salah satu penyakit infeksi saluran pernapasan akut yang menjadi penyebab utama kematian balita di Indonesia. 
-                Faktor risiko pneumonia balita tidak hanya dipengaruhi oleh karakteristik individu tetapi juga dipengaruhi oleh faktor lingkungan 
-                dan geografis. Oleh karena itu, diperlukan analisis spasial untuk mengidentifikasi pola penyebaran pneumonia balita dan 
-                faktor-faktor yang mempengaruhinya di Pulau Jawa.
+                Di Pulau Jawa sebagai pulau dengan kepadatan penduduk tertinggi, distribusi kasus pneumonia balita menunjukkan variasi spasial 
+                yang signifikan antar kabupaten/kota. Faktor risiko pneumonia balita tidak hanya dipengaruhi oleh karakteristik individu tetapi 
+                juga sangat dipengaruhi oleh faktor lingkungan, sanitasi, ketersediaan air bersih, dan kondisi geografis lokal.
               </p>
-            </CardContent>
-          </Card>
+              <p className="about-text">
+                Model Geographically Weighted Negative Binomial Regression (GWNBR) diperlukan untuk menganalisis heterogenitas spasial 
+                dalam pola kejadian pneumonia balita, karena model global konvensional tidak dapat menangkap variasi lokal yang kompleks 
+                di berbagai wilayah Pulau Jawa.
+              </p>
+            </div>
+          </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Tujuan</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground mb-4">
-                Dashboard ini dikembangkan dengan tujuan:
+          <div className="about-main-card">
+            <div className="about-card-header">
+              <h2 className="about-card-title">Tujuan Penelitian</h2>
+            </div>
+            <div className="about-card-content">
+              <p className="about-text">
+                Dashboard ini dikembangkan dengan tujuan utama:
               </p>
-              <ul className="list-disc pl-6 text-muted-foreground space-y-2">
-                <li>Mengidentifikasi pola spasial kasus pneumonia balita di Pulau Jawa</li>
-                <li>Mengetahui faktor-faktor yang mempengaruhi kejadian pneumonia balita secara spasial</li>
-                <li>Menyediakan visualisasi interaktif untuk memudahkan pemahaman terhadap hasil analisis</li>
-                <li>Membantu pengambilan keputusan dalam upaya pencegahan dan pengendalian pneumonia balita</li>
+              <ul className="about-list">
+                <li>Mengidentifikasi pola spasial kasus pneumonia balita di 119 kabupaten/kota Pulau Jawa tahun 2022</li>
+                <li>Menganalisis pengaruh lokal variabel sanitasi, air bersih, kepadatan penduduk, dan jumlah balita terhadap kejadian pneumonia</li>
+                <li>Menerapkan model GWNBR untuk menangani overdispersi dan heterogenitas spasial dalam data count</li>
+                <li>Menyediakan visualisasi interaktif hasil koefisien GWNBR dan analisis Z-hitung untuk setiap lokasi</li>
+                <li>Mendukung pengambilan keputusan berbasis evidens untuk program pencegahan pneumonia balita yang spesifik lokasi</li>
               </ul>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Dataset</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground mb-6">
-                Data yang digunakan dalam analisis ini mencakup jumlah kasus pneumonia balita di seluruh kabupaten/kota di Pulau Jawa 
-                periode tahun 2022-2023. Data diperoleh dari berbagai sumber resmi seperti Kementerian Kesehatan Republik Indonesia, 
-                Dinas Kesehatan Provinsi, dan Badan Pusat Statistik.
+          <div className="about-main-card">
+            <div className="about-card-header">
+              <h2 className="about-card-title">Ruang Lingkup Penelitian</h2>
+            </div>
+            <div className="about-card-content">
+              <div className="about-dataset-card">
+                <h3 className="about-dataset-title">Cakupan Wilayah</h3>
+                <p className="about-text">
+                  Penelitian mencakup 119 kabupaten/kota di Pulau Jawa yang terdiri dari:
+                </p>
+                <ul className="about-list">
+                  <li><strong>DKI Jakarta:</strong> 6 kabupaten/kota</li>
+                  <li><strong>Jawa Barat:</strong> 27 kabupaten/kota</li>
+                  <li><strong>Jawa Tengah:</strong> 35 kabupaten/kota</li>
+                  <li><strong>DI Yogyakarta:</strong> 5 kabupaten/kota</li>
+                  <li><strong>Jawa Timur:</strong> 38 kabupaten/kota</li>
+                  <li><strong>Banten:</strong> 8 kabupaten/kota</li>
+                </ul>
+              </div>
+              
+              <div className="about-dataset-card">
+                <h3 className="about-dataset-title">Periode Data</h3>
+                <p className="about-text">
+                  Data yang dianalisis adalah data cross-sectional tahun 2022, mencakup kasus pneumonia balita 
+                  dan variabel prediktor pada periode yang sama untuk memastikan konsistensi temporal.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="about-main-card">
+            <div className="about-card-header">
+              <h2 className="about-card-title">Dataset dan Sumber Data</h2>
+            </div>
+            <div className="about-card-content">
+              <p className="about-text">
+                Penelitian ini menggunakan empat dataset utama yang terintegrasi untuk analisis GWNBR:
               </p>
-              <Card className="bg-muted/50 border">
-                <CardHeader>
-                  <CardTitle className="text-base">Variabel yang Digunakan</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Variabel</TableHead>
-                        <TableHead>Deskripsi</TableHead>
-                        <TableHead>Sumber</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      <TableRow>
-                        <TableCell className="font-medium">Kasus Pneumonia</TableCell>
-                        <TableCell>Jumlah kasus pneumonia balita per kabupaten/kota</TableCell>
-                        <TableCell>Kemenkes RI</TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell className="font-medium">Kepadatan Penduduk</TableCell>
-                        <TableCell>Jumlah penduduk per km²</TableCell>
-                        <TableCell>BPS</TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell className="font-medium">Persentase Rumah Sehat</TableCell>
-                        <TableCell>Persentase rumah yang memenuhi syarat kesehatan</TableCell>
-                        <TableCell>Kemenkes RI</TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell className="font-medium">Persentase BBLR</TableCell>
-                        <TableCell>Persentase bayi dengan berat lahir rendah</TableCell>
-                        <TableCell>Kemenkes RI</TableCell>
-                      </TableRow>
-                    </TableBody>
-                  </Table>
-                </CardContent>
-              </Card>
-            </CardContent>
-          </Card>
+              
+              <div className="about-dataset-card">
+                <h3 className="about-dataset-title">Data Hasil Pengolahan (Hasil_Pengolahan.csv)</h3>
+                <p className="about-text">
+                  Dataset utama yang berisi data kasus pneumonia balita dan variabel prediktor untuk 119 kabupaten/kota, 
+                  mencakup variabel response dan kovariat yang telah melalui proses cleaning dan validasi.
+                </p>
+              </div>
 
-          <div>
-            <h2 className="text-2xl font-semibold tracking-tight text-center mb-6">Tim Peneliti</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Card className="flex flex-col items-center p-6 text-center">
-                <Avatar className="h-24 w-24 mb-4">
-                  <AvatarImage src="/Rap7.jpg" alt="Rafirs" className="object-cover" />
-                  <AvatarFallback>R</AvatarFallback>
-                </Avatar>
-                <h3 className="font-medium">Rafirs</h3>
-                <p className="text-muted-foreground text-sm">Mahasiswa Program Studi Statistika</p>
-                <p className="text-muted-foreground text-sm">Sekolah Tinggi Ilmu Statistik</p>
-              </Card>
-              <Card className="flex flex-col items-center p-6 text-center">
-                <Avatar className="h-24 w-24 mb-4">
-                  <AvatarImage src="/War001.jpg" alt="Bapak Waris" className="object-cover" />
-                  <AvatarFallback>BW</AvatarFallback>
-                </Avatar>
-                <h3 className="font-medium">Bapak Waris</h3>
-                <p className="text-muted-foreground text-sm">Dosen Pembimbing</p>
-                <p className="text-muted-foreground text-sm">Sekolah Tinggi Ilmu Statistik</p>
-              </Card>
+              <div className="about-dataset-card">
+                <h3 className="about-dataset-title">Koefisien dan Z-hitung GWNBR (KoefGWNBR_ZHitung.csv)</h3>
+                <p className="about-text">
+                  Hasil analisis GWNBR yang berisi koefisien lokal dan nilai Z-hitung untuk setiap lokasi, 
+                  memungkinkan identifikasi signifikansi statistik variabel prediktor di setiap kabupaten/kota.
+                </p>
+              </div>
+
+              <div className="about-dataset-card">
+                <h3 className="about-dataset-title">Data Spasial Pulau Jawa (rbipulaujawageojson.geojson)</h3>
+                <p className="about-text">
+                  File GeoJSON yang berisi batas administrasi kabupaten/kota di Pulau Jawa, digunakan untuk 
+                  visualisasi peta tematik dan perhitungan matriks pembobot spasial dalam model GWNBR.
+                </p>
+              </div>
+
+              <div className="about-dataset-card">
+                <h3 className="about-dataset-title">Variabel yang Digunakan</h3>
+                <table className="about-table">
+                  <thead>
+                    <tr>
+                      <th>Variabel</th>
+                      <th>Deskripsi</th>
+                      <th>Tipe Data</th>
+                      <th>Sumber</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td className="font-medium">Kasus Pneumonia (Y)</td>
+                      <td>Jumlah kasus pneumonia balita per kabupaten/kota</td>
+                      <td>Count Data</td>
+                      <td>Kemenkes RI</td>
+                    </tr>
+                    <tr>
+                      <td className="font-medium">Sanitasi Layak (X₁)</td>
+                      <td>Persentase rumah tangga dengan sanitasi layak</td>
+                      <td>Kontinyu (%)</td>
+                      <td>BPS (Susenas)</td>
+                    </tr>
+                    <tr>
+                      <td className="font-medium">Air Bersih (X₂)</td>
+                      <td>Persentase rumah tangga dengan akses air bersih</td>
+                      <td>Kontinyu (%)</td>
+                      <td>BPS (Susenas)</td>
+                    </tr>
+                    <tr>
+                      <td className="font-medium">Kepadatan Penduduk (X₃)</td>
+                      <td>Jumlah penduduk per km²</td>
+                      <td>Kontinyu</td>
+                      <td>BPS</td>
+                    </tr>
+                    <tr>
+                      <td className="font-medium">Jumlah Balita (X₄)</td>
+                      <td>Jumlah balita per kabupaten/kota</td>
+                      <td>Count Data</td>
+                      <td>BPS</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <div className="about-main-card">
+            <div className="about-card-header">
+              <h2 className="about-card-title">Keunggulan Model GWNBR</h2>
+            </div>
+            <div className="about-card-content">
+              <p className="about-text">
+                Model GWNBR yang digunakan dalam penelitian ini memiliki keunggulan:
+              </p>
+              <ul className="about-list">
+                <li><strong>Mengatasi Overdispersi:</strong> Cocok untuk data count dengan varians lebih besar dari mean</li>
+                <li><strong>Heterogenitas Spasial:</strong> Parameter bervariasi setiap lokasi, tidak seperti model global</li>
+                <li><strong>Interpretasi Lokal:</strong> Menghasilkan koefisien spesifik untuk setiap kabupaten/kota</li>
+                <li><strong>Signifikansi Spasial:</strong> Menguji signifikansi statistik parameter di setiap lokasi</li>
+                <li><strong>Visualisasi Interaktif:</strong> Memungkinkan eksplorasi pola spasial melalui peta dinamis</li>
+              </ul>
+            </div>
+          </div>
+
+          <div className="about-main-card">
+            <div className="about-card-header">
+              <h2 className="about-card-title">Fitur Dashboard</h2>
+            </div>
+            <div className="about-card-content">
+              <p className="about-text">
+                Dashboard ini menyediakan fitur-fitur interaktif untuk eksplorasi hasil analisis GWNBR:
+              </p>
+              <ul className="about-list">
+                <li><strong>Peta Interaktif:</strong> Visualisasi distribusi kasus pneumonia dan koefisien GWNBR</li>
+                <li><strong>Filter Dinamis:</strong> Eksplorasi data berdasarkan provinsi dan variabel tertentu</li>
+                <li><strong>Analisis Statistik:</strong> Tampilan koefisien, Z-hitung, dan signifikansi per lokasi</li>
+                <li><strong>Perbandingan Model:</strong> Evaluasi performa GWNBR vs model global</li>
+                <li><strong>Export Data:</strong> Unduh hasil analisis untuk penggunaan lebih lanjut</li>
+              </ul>
+            </div>
+          </div>
+
+          <div className="about-team-section">
+            <h2 className="about-team-title">Tim Peneliti</h2>
+            <div className="about-team-grid">
+              <div className="about-team-card">
+                <div className="about-team-avatar">
+                  <Image src="/Rap7.jpg" alt="Rafirs" width={96} height={96} className="object-cover" />
+                </div>
+                <h3 className="about-team-name">Rafirs</h3>
+                <p className="about-team-role">Mahasiswa Program Studi Statistika</p>
+                <p className="about-team-institution">Sekolah Tinggi Ilmu Statistik</p>
+                <p className="about-team-description">Peneliti utama yang mengembangkan model GWNBR dan dashboard interaktif</p>
+              </div>
+              <div className="about-team-card">
+                <div className="about-team-avatar">
+                  <Image src="/War001.jpg" alt="Bapak Waris" width={96} height={96} className="object-cover" />
+                </div>
+                <h3 className="about-team-name">Bapak Waris</h3>
+                <p className="about-team-role">Dosen Pembimbing</p>
+                <p className="about-team-institution">Sekolah Tinggi Ilmu Statistik</p>
+                <p className="about-team-description">Pembimbing penelitian dengan expertise dalam analisis spasial dan epidemiologi</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="about-main-card">
+            <div className="about-card-header">
+              <h2 className="about-card-title">Kontribusi Penelitian</h2>
+            </div>
+            <div className="about-card-content">
+              <p className="about-text">
+                Penelitian ini berkontribusi dalam:
+              </p>
+              <ul className="about-list">
+                <li><strong>Metodologi:</strong> Penerapan GWNBR untuk analisis epidemiologi spasial di Indonesia</li>
+                <li><strong>Kebijakan Kesehatan:</strong> Evidens untuk program pencegahan pneumonia balita berbasis lokasi</li>
+                <li><strong>Teknologi:</strong> Dashboard interaktif untuk visualisasi hasil analisis spasial kompleks</li>
+                <li><strong>Akademis:</strong> Referensi untuk penelitian serupa dengan data count dan heterogenitas spasial</li>
+              </ul>
             </div>
           </div>
           
-          <div className="flex justify-center pt-6">
-            <Button asChild>
-              <Link href={AppRoutes.HOME}>Kembali ke Dashboard</Link>
-            </Button>
+          <div className="about-button-container">
+            <Link href={AppRoutes.HOME} className="about-button">
+              Kembali ke Dashboard
+            </Link>
           </div>
         </div>
       </main>
     </div>
   );
-} 
+}
