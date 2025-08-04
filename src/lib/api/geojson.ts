@@ -9,11 +9,13 @@ export interface GeojsonDataResponse {
 export interface FetchOptions {
   maxRetries?: number;
   retryDelayMs?: number;
+  timeout?: number;
 }
 
 const DEFAULT_OPTIONS: Required<FetchOptions> = {
   maxRetries: 3,
   retryDelayMs: 3000,
+  timeout: 30000, // Default timeout of 30 seconds
 };
 
 export class GeojsonService {
@@ -35,14 +37,35 @@ export class GeojsonService {
 
     const tryFetch = async (): Promise<FeatureCollection> => {
       try {
-        const response = await fetch(url);
-        
-        if (!response.ok) {
-          throw new Error(`Gagal mengambil data: ${response.statusText}`);
-        }
+        // Create an AbortController for timeout
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), opts.timeout);
 
-        const data = await response.json();
-        return data as FeatureCollection;
+        try {
+          const response = await fetch(url, { 
+            signal: controller.signal 
+          });
+          
+          // Clear the timeout as fetch completed
+          clearTimeout(timeoutId);
+          
+          if (!response.ok) {
+            throw new Error(`Gagal mengambil data: ${response.statusText}`);
+          }
+
+          const data = await response.json();
+          return data as FeatureCollection;
+        } catch (err) {
+          // Clean up the timeout if fetch fails
+          clearTimeout(timeoutId);
+          
+          // Check if it's an abort error
+          if (err instanceof Error && err.name === 'AbortError') {
+            throw new Error(`Permintaan dibatalkan karena timeout (${opts.timeout/1000} detik)`);
+          }
+          
+          throw err;
+        }
       } catch (error) {
         attempts++;
         

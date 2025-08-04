@@ -1,7 +1,8 @@
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
-import { AlertCircle, RefreshCw, WifiOff } from "lucide-react";
-import { motion } from "framer-motion";
+import React from 'react';
+import { AlertTriangleIcon, RefreshCw } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { motion } from 'framer-motion';
 
 interface MapErrorStateProps {
   error: Error;
@@ -9,74 +10,64 @@ interface MapErrorStateProps {
 }
 
 export function MapErrorState({ error, onRetry }: MapErrorStateProps) {
-  return (
-    <div className="flex flex-col items-center justify-center h-full bg-gradient-to-br from-background via-muted/10 to-background p-8">
-      <motion.div
-        initial={{ opacity: 0, y: 20, scale: 0.9 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        transition={{ duration: 0.5 }}
-        className="w-full max-w-md"
-      >
-        {/* Error icon animation */}
-        <motion.div
-          className="flex justify-center mb-6"
-          animate={{ 
-            rotate: [0, -5, 5, 0],
-            scale: [1, 1.05, 1]
-          }}
-          transition={{ 
-            duration: 2,
-            repeat: Infinity,
-            repeatDelay: 3
-          }}
-        >
-          <div className="relative">
-            <div className="absolute inset-0 bg-destructive/20 rounded-full blur-xl" />
-            <div className="relative bg-destructive/10 p-4 rounded-full border border-destructive/20">
-              <WifiOff className="h-8 w-8 text-destructive" />
-            </div>
-          </div>
-        </motion.div>
+  // Determine type of error for more helpful messages
+  const isNetworkError = error.message.includes('network') || 
+    error.message.includes('fetch') || 
+    error.message.includes('Failed to fetch');
+  
+  const isTimeoutError = error.message.includes('timeout') || 
+    error.message.includes('aborted') || 
+    error.message.toLowerCase().includes('dibatalkan');
+  
+  const isFormatError = error.message.includes('JSON') || 
+    error.message.includes('parse') || 
+    error.message.includes('Unexpected token');
 
-        <Alert className="border-destructive/30 bg-destructive/5 backdrop-blur-sm">
-          <AlertCircle className="h-5 w-5 text-destructive" />
-          <AlertTitle className="text-destructive font-bold text-lg mb-2">
-            Gagal Memuat Peta
-          </AlertTitle>
-          <AlertDescription className="space-y-4">
-            <p className="text-muted-foreground leading-relaxed">
-              {error.message || "Tidak dapat memuat data geografis. Periksa koneksi internet Anda dan coba lagi."}
-            </p>
-            
-            <motion.div
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-            >
+  let errorTitle = "Tidak dapat memuat peta";
+  let errorMessage = error.message;
+  let solution = "Silakan coba muat ulang peta.";
+
+  if (isNetworkError) {
+    errorTitle = "Gagal terhubung ke server";
+    errorMessage = "Tidak dapat mengakses data peta. Periksa koneksi internet Anda.";
+    solution = "Periksa koneksi internet dan coba lagi.";
+  } else if (isTimeoutError) {
+    errorTitle = "Waktu muat habis";
+    errorMessage = "Data peta terlalu besar dan memakan waktu terlalu lama untuk dimuat.";
+    solution = "Kami akan memperbaiki masalah ini. Silakan coba lagi nanti.";
+  } else if (isFormatError) {
+    errorTitle = "Format data tidak valid";
+    errorMessage = "Data peta memiliki format yang tidak dapat diproses.";
+    solution = "Tim teknis kami akan memperbaiki masalah ini.";
+  }
+
+  return (
+    <div className="flex h-full flex-col items-center justify-center p-8">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.3 }}
+        className="max-w-md w-full"
+      >
+        <Alert variant="destructive" className="border-2 shadow-lg">
+          <AlertTriangleIcon className="h-6 w-6 mr-2" />
+          <AlertTitle className="text-lg font-semibold mb-2">{errorTitle}</AlertTitle>
+          <AlertDescription className="text-sm space-y-4">
+            <p>{errorMessage}</p>
+            <p className="font-medium">{solution}</p>
+            <div className="pt-2">
               <Button 
-                variant="default" 
-                size="sm" 
-                className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-medium shadow-lg transition-all duration-200 group" 
                 onClick={onRetry}
+                variant="outline"
+                className="mt-2 hover:bg-red-50"
+                size="sm"
               >
-                <RefreshCw className="h-4 w-4 mr-2 group-hover:rotate-180 transition-transform duration-500" />
+                <RefreshCw className="h-4 w-4 mr-2" />
                 Coba Lagi
               </Button>
-            </motion.div>
-            
-            {/* Help text */}
-            <div className="pt-2 border-t border-border/30">
-              <p className="text-xs text-muted-foreground/80 text-center">
-                Pastikan koneksi internet stabil dan refresh halaman jika masalah berlanjut
-              </p>
             </div>
           </AlertDescription>
         </Alert>
-
-        {/* Background decoration */}
-        <div className="absolute inset-0 -z-10 overflow-hidden">
-          <div className="absolute top-1/4 left-1/4 w-32 h-32 bg-destructive/5 rounded-full blur-3xl animate-pulse" />
-          <div className="absolute bottom-1/4 right-1/4 w-24 h-24 bg-destructive/10 rounded-full blur-2xl animate-pulse" style={{ animationDelay: '1s' }} />
-        </div>
       </motion.div>
     </div>
   );
