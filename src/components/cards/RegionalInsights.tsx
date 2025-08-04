@@ -13,8 +13,8 @@ interface RegionItemProps {
     sanitasi?: number;
     kepadatan?: number;
   };
-  getRiskBadgeVariant: (risk: string) => string;
-  getRiskIcon: (risk: string) => React.ReactNode;
+  getRiskBadgeVariant: (risk: 'High' | 'Medium' | 'Low') => 'destructive' | 'secondary' | 'default' | 'outline';
+  getRiskIcon: (risk: 'High' | 'Medium' | 'Low') => React.ReactNode;
 }
 
 const RegionItem = ({ region, getRiskBadgeVariant, getRiskIcon }: RegionItemProps) => (
@@ -113,16 +113,16 @@ export default function RegionalInsights() {
       kepadatan: item.Kepadatan
     }));
 
-  const getRiskBadgeVariant = (risk: string) => {
+  const getRiskBadgeVariant = (risk: 'High' | 'Medium' | 'Low') => {
     switch (risk) {
-      case 'High': return 'destructive' as const;
-      case 'Medium': return 'secondary' as const;
-      case 'Low': return 'default' as const;
-      default: return 'outline' as const;
+      case 'High': return 'destructive';
+      case 'Medium': return 'secondary';
+      case 'Low': return 'default';
+      default: return 'outline';
     }
   };
 
-  const getRiskIcon = (risk: string) => {
+  const getRiskIcon = (risk: 'High' | 'Medium' | 'Low') => {
     switch (risk) {
       case 'High': return <XCircleIcon className="h-4 w-4" />;
       case 'Medium': return <AlertTriangleIcon className="h-4 w-4" />;

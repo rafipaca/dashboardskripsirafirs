@@ -6,7 +6,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { DownloadIcon, ShareIcon, ActivityIcon, TrendingUpIcon, BarChartIcon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { useState } from "react";
 import { useChartData, useSpatialAnalysis } from "@/hooks/useResearchData";
 import CorrelationAnalysis from "./CorrelationAnalysis";
 
@@ -21,14 +20,13 @@ interface AnalyticsTabsProps {
 
 export default function AnalyticsTabs({ selectedRegion }: AnalyticsTabsProps) {
   // Menggunakan data penelitian yang sebenarnya
-  const { barChartData, pieChartData, lineChartData, areaChartData, summaryStats, loading, error } = useChartData();
-  const { hotspots, modelEffectiveness } = useSpatialAnalysis();
+  const { barChartData, pieChartData, lineChartData, summaryStats, loading, error } = useChartData();
+  const { modelEffectiveness } = useSpatialAnalysis();
 
   // Menggunakan data yang tersedia dari hooks
   const barData = barChartData || [];
   const pieData = pieChartData || [];
   const lineData = lineChartData || [];
-  const areaData = areaChartData || [];
 
   // Data summary yang sudah difilter berdasarkan wilayah yang dipilih
   const currentSummaryStats = summaryStats || {
@@ -244,14 +242,24 @@ export default function AnalyticsTabs({ selectedRegion }: AnalyticsTabsProps) {
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div className="text-center p-4 bg-gradient-to-br from-orange-50 to-red-50 rounded-lg border">
                           <div className="text-2xl font-bold text-orange-600 mb-2">
-                            {lineData.length > 0 ? lineData[lineData.length - 1]?.value || "N/A" : "N/A"}
+                            {lineData.length > 0 ? (
+                              lineData[lineData.length - 1]?.value !== undefined 
+                                ? String(lineData[lineData.length - 1].value) 
+                                : "N/A"
+                            ) : "N/A"}
                           </div>
                           <div className="text-sm font-medium text-orange-800">Kasus Terbaru</div>
                           <div className="text-xs text-orange-600 mt-1">2022</div>
                         </div>
                         <div className="text-center p-4 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg border">
                           <div className="text-2xl font-bold text-blue-600 mb-2">
-                            {lineData.length > 0 ? ((lineData[lineData.length - 1]?.value - lineData[0]?.value) / lineData[0]?.value * 100).toFixed(1) || "N/A" : "N/A"}%
+                            {lineData.length > 0 ? (
+                              lineData[lineData.length - 1]?.value !== undefined && 
+                              lineData[0]?.value !== undefined &&
+                              lineData[0]?.value !== 0
+                                ? `${((Number(lineData[lineData.length - 1].value) - Number(lineData[0].value)) / Number(lineData[0].value) * 100).toFixed(1)}%`
+                                : "N/A"
+                            ) : "N/A"}
                           </div>
                           <div className="text-sm font-medium text-blue-800">Perubahan</div>
                           <div className="text-xs text-blue-600 mt-1">2019-2022</div>

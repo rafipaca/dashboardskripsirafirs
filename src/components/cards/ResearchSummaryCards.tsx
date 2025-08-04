@@ -143,28 +143,28 @@ export default function ResearchSummaryCards() {
       value: totalRegions,
       description: "Wilayah Penelitian",
       icon: <MapPinIcon className="h-4 w-4" />,
-      variant: "default" as const
+      variant: "default" as "default" | "success" | "warning" | "error"
     },
     {
       title: "Provinsi",
       value: totalProvinces,
       description: "Di Pulau Jawa",
       icon: <MapPinIcon className="h-4 w-4" />,
-      variant: "default" as const
+      variant: "default" as "default" | "success" | "warning" | "error"
     },
     {
       title: "Total Kasus",
       value: totalCases,
       description: "Kasus pneumonia balita",
       icon: <UsersIcon className="h-4 w-4" />,
-      variant: "default" as const
+      variant: "default" as "default" | "success" | "warning" | "error"
     },
     {
       title: "Risiko Tinggi",
       value: highRiskRegions,
       description: "Wilayah berisiko",
       icon: <AlertTriangleIcon className="h-4 w-4" />,
-      variant: highRiskRegions > totalRegions * 0.3 ? "warning" : "success" as const,
+      variant: highRiskRegions > totalRegions * 0.3 ? "warning" : "success" as "default" | "success" | "warning" | "error",
       showProgress: true,
       progressValue: highRiskRegions,
       maxValue: totalRegions
@@ -174,14 +174,14 @@ export default function ResearchSummaryCards() {
       value: significantVariables,
       description: "Variabel signifikan",
       icon: <BarChartIcon className="h-4 w-4" />,
-      variant: "default" as const
+      variant: "default" as "default" | "success" | "warning" | "error"
     },
     {
       title: "Sanitasi",
       value: `${avgSanitasi}%`,
       description: "Rata-rata wilayah",
       icon: <ActivityIcon className="h-4 w-4" />,
-      variant: avgSanitasi > 80 ? "success" : avgSanitasi > 60 ? "warning" : "error" as const,
+      variant: avgSanitasi > 80 ? "success" : avgSanitasi > 60 ? "warning" : "error" as "default" | "success" | "warning" | "error",
       showProgress: true,
       progressValue: avgSanitasi,
       maxValue: 100
