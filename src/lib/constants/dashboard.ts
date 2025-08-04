@@ -23,7 +23,7 @@ export const DASHBOARD_CONSTANTS = {
   },
 
   API: {
-    GEOJSON_URL: "/data/rbipulaujawageojson.geojson",
+    GEOJSON_URL: "/data/rbipulaujawa.geojson",
     MAX_RETRIES: 3,
     RETRY_DELAY_MS: 3000,
   },

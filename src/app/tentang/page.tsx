@@ -117,7 +117,7 @@ export default function About() {
               </div>
 
               <div className="about-dataset-card">
-                <h3 className="about-dataset-title">Data Spasial Pulau Jawa (rbipulaujawageojson.geojson)</h3>
+                <h3 className="about-dataset-title">Data Spasial Pulau Jawa (rbipulaujawa.geojson)</h3>
                 <p className="about-text">
                   File GeoJSON yang berisi batas administrasi kabupaten/kota di Pulau Jawa, digunakan untuk 
                   visualisasi peta tematik dan perhitungan matriks pembobot spasial dalam model GWNBR.

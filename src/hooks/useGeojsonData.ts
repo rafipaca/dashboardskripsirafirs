@@ -18,7 +18,7 @@ export interface UseGeojsonDataReturn {
 
 export const useGeojsonData = ({
   // Use the optimized version by default for Vercel deployment
-  url = "/data/rbipulaujawageojson.min.geojson",
+  url = "/data/rbipulaujawa.geojson",
   maxRetries = 3,
   retryDelayMs = 3000,
   timeout = 30000, // 30 seconds timeout
@@ -50,10 +50,10 @@ export const useGeojsonData = ({
         console.log("Primary GeoJSON load failed, trying fallback...", primaryErr);
         
         // If the main file fails, try an even smaller fallback
-        const isFallbackAlreadyAttempted = url.includes('.min.geojson');
+        const isFallbackAlreadyAttempted = url.includes('.geojson') && !url.includes('.min.geojson');
         const fallbackUrl = isFallbackAlreadyAttempted 
-          ? "/data/rbipulaujawageojson.tiny.geojson" 
-          : "/data/rbipulaujawageojson.min.geojson";
+          ? "/data/rbipulaujawa.tiny.geojson" 
+          : "/data/rbipulaujawa.geojson";
         
         try {
           const fallbackResult = await geojsonService.fetchGeojsonData(fallbackUrl, {
