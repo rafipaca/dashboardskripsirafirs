@@ -5,26 +5,27 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { motion } from 'framer-motion';
 
 interface MapErrorStateProps {
-  error: Error;
+  error: string | null;
   onRetry: () => void;
 }
 
 export function MapErrorState({ error, onRetry }: MapErrorStateProps) {
+  if (!error) return null; // Don't render if there's no error
   // Determine type of error for more helpful messages
-  const isNetworkError = error.message.includes('network') || 
-    error.message.includes('fetch') || 
-    error.message.includes('Failed to fetch');
+  const isNetworkError = error.includes('network') || 
+    error.includes('fetch') || 
+    error.includes('Failed to fetch');
   
-  const isTimeoutError = error.message.includes('timeout') || 
-    error.message.includes('aborted') || 
-    error.message.toLowerCase().includes('dibatalkan');
+  const isTimeoutError = error.includes('timeout') || 
+    error.includes('aborted') || 
+    error.toLowerCase().includes('dibatalkan');
   
-  const isFormatError = error.message.includes('JSON') || 
-    error.message.includes('parse') || 
-    error.message.includes('Unexpected token');
+  const isFormatError = error.includes('JSON') || 
+    error.includes('parse') || 
+    error.includes('Unexpected token');
 
   let errorTitle = "Tidak dapat memuat peta";
-  let errorMessage = error.message;
+  let errorMessage = error;
   let solution = "Silakan coba muat ulang peta.";
 
   if (isNetworkError) {

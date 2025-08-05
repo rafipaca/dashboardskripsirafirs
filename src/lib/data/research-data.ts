@@ -77,15 +77,7 @@ export async function loadResearchData(): Promise<ResearchDataPoint[]> {
     for (let i = 1; i < lines.length; i++) {
       const line = lines[i].trim();
       if (line) {
-        // Robust CSV parsing
-        const values = line.split(',').map(val => {
-          let cleaned = val.trim();
-          // Remove surrounding quotes
-          if (cleaned.startsWith('"') && cleaned.endsWith('"')) {
-            cleaned = cleaned.slice(1, -1);
-          }
-          return cleaned;
-        });
+        const values = parseCSVLine(line);
         
         if (values.length < 33) {
           continue;
@@ -93,7 +85,7 @@ export async function loadResearchData(): Promise<ResearchDataPoint[]> {
         
         const dataPoint: ResearchDataPoint = {
           No: parseInt(values[0]) || 0,
-          NAMOBJ: (values[1] || '').replace(/"/g, ''), // Remove quotes
+          NAMOBJ: values[1] || '',
           Penemuan: parseInt(values[2]) || 0,
           JumlahBalita: parseInt(values[3]) || 0,
           NTL: parseFloat(values[4]) || 0,
@@ -124,7 +116,7 @@ export async function loadResearchData(): Promise<ResearchDataPoint[]> {
           BBLR_P: parseFloat(values[29]) || 0,
           RLSPr: parseFloat(values[30]) || 0,
           AirMinumLayak: parseFloat(values[31]) || 0,
-          VariabelSignifikan: (values[32] || '').replace(/"/g, '')
+          VariabelSignifikan: values[32] || ''
         };
         
         data.push(dataPoint);
@@ -189,7 +181,7 @@ export async function loadGWNBRCoefficients(): Promise<GWNBRCoefficient[]> {
     for (let i = 1; i < lines.length; i++) {
       const line = lines[i].trim();
       if (line) {
-        const values = line.split(',');
+        const values = parseCSVLine(line);
         
         const coefficient: GWNBRCoefficient = {
           Region: values[0] || '',

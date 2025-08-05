@@ -1,125 +1,206 @@
 "use client";
 
-import dynamic from "next/dynamic";
-import { motion } from "framer-motion";
-import { FeatureCollection } from "geojson";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Button } from "@/components/ui/button";
+import { ChevronsUpDown } from 'lucide-react';
 import { Badge } from "@/components/ui/badge";
 import { InfoIcon, MapPinIcon } from "lucide-react";
 import { MapLegend } from "./MapLegend";
 import { MapLoadingState } from "./MapLoadingState";
 import { MapErrorState } from "./MapErrorState";
+import { useState, lazy, Suspense, useEffect } from "react";
+import { useMapData } from "@/hooks/useMapData";
+import { useWilayahData } from '@/hooks/useWilayahData';
+
+// Lazy load MapClient to prevent SSR issues with Leaflet
+const MapClient = lazy(() => import("@/components/maps/MapClient"));
 
 interface MapCardProps {
-  geojsonData: FeatureCollection | null;
+  geojsonData: any;
   isLoading: boolean;
-  error: Error | null;
+  error: string | null;
   onRetry: () => void;
-  onRegionSelect: (region: string) => void;
+  onRegionSelect?: (feature: any) => void;
 }
 
-const MapClient = dynamic(() => import("@/components/maps/MapClient"), {
-  loading: () => <MapLoadingState />,
-  ssr: false,
-});
+const mapLayers = [
+  { value: 'significance', label: 'Peta Signifikansi' },
+  { value: 'Penemuan', label: 'Tingkat Penemuan Kasus (Y)' },
+  { value: 'GiziKurang', label: 'Gizi Kurang (X1)' },
+  { value: 'IMD', label: 'IMD (X2)' },
+  { value: 'RokokPerkapita', label: 'Rokok per Kapita (X3)' },
+  { value: 'Kepadatan', label: 'Kepadatan Penduduk (X4)' },
+  { value: 'AirMinumLayak', label: 'Air Minum Layak (X5)' },
+  { value: 'Sanitasi', label: 'Sanitasi (X6)' },
+];
 
 export default function MapCard({ geojsonData, isLoading, error, onRetry, onRegionSelect }: MapCardProps) {
+  const [activeLayer, setActiveLayer] = useState('significance');
+  const [selectedRegionName, setSelectedRegionName] = useState<string>('');
+  const { generateModelEquation } = useMapData();
+  const { provinces: availableProvinces, regionsByProvince, loading: wilayahLoading, error: wilayahError } = useWilayahData();
+
+  const [popoverOpen, setPopoverOpen] = useState(false);
+  const [selectedProvince, setSelectedProvince] = useState('');
+  const [selectedRegion, setSelectedRegion] = useState('');
+
+  const filteredRegions = regionsByProvince[selectedProvince] || [];
+
+  const handleProvinceChange = (province: string) => {
+    setSelectedProvince(province);
+    setSelectedRegion(''); // Reset region selection when province changes
+  };
+
+  // Effect to set a default province once data is loaded
+  useEffect(() => {
+    if (availableProvinces.length > 0 && !selectedProvince) {
+      // Default to JAWA TIMUR if it exists, otherwise the first province
+      const defaultProvince = availableProvinces.find(p => p.toUpperCase() === 'JAWA TIMUR') || availableProvinces[0];
+      setSelectedProvince(defaultProvince);
+    }
+  }, [availableProvinces, selectedProvince]);
+
+  const handleRegionSelect = (feature: any) => {
+    const regionName = feature?.properties?.NAMOBJ || feature?.properties?.WADMKK || "";
+    setSelectedRegionName(regionName);
+    if (onRegionSelect) {
+      onRegionSelect(feature);
+    }
+  };
+
   const renderMapContent = () => {
-    if (isLoading) {
-      return <MapLoadingState />;
-    }
-
-    if (error) {
-      return <MapErrorState error={error} onRetry={onRetry} />;
-    }
-
+    if (isLoading) return <MapLoadingState />;
+    if (error) return <MapErrorState error={error} onRetry={onRetry} />;
     if (geojsonData) {
-      return <MapClient data={geojsonData} onRegionSelect={onRegionSelect} />;
+      return (
+        <Suspense fallback={<MapLoadingState />}>
+          <MapClient 
+            data={geojsonData} 
+            onRegionSelect={handleRegionSelect} 
+            activeLayer={activeLayer} 
+            selectedRegion={selectedRegion}
+          />
+        </Suspense>
+      );
     }
-
     return <MapLoadingState />;
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.6, ease: [0.4, 0, 0.2, 1] }}
-    >
-      <Card className="w-full transition-all duration-300 hover:shadow-xl hover:shadow-primary/5 hover:border-primary/30 group bg-card/50 backdrop-blur-sm border-border/50">
-        <CardHeader className="transition-all duration-300 group-hover:bg-gradient-to-r group-hover:from-primary/5 group-hover:via-transparent group-hover:to-primary/5 flex flex-row items-center justify-between space-y-0 pb-4">
-          <div className="space-y-1">
-            <CardTitle className="text-xl font-bold transition-colors duration-300 group-hover:text-primary bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text">
-              📍 Peta Sebaran Interaktif
+    <Card className="h-full flex flex-col">
+      <CardHeader>
+        <div className="flex justify-between items-start">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <MapPinIcon className="w-6 h-6 text-primary" />
+              Peta Interaktif Analisis Pneumonia
             </CardTitle>
-            <CardDescription className="text-muted-foreground text-sm font-medium">
-              Distribusi geografis kasus pneumonia balita di Pulau Jawa dengan data penelitian asli
-            </CardDescription>
+            <CardDescription>Visualisasi data GWNBR per kabupaten/kota di Jawa Timur</CardDescription>
           </div>
-          <motion.div
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            transition={{ duration: 0.2 }}
-          >
-            <Badge 
-              variant="secondary" 
-              className="transition-all duration-300 bg-primary/10 text-primary border-primary/20 hover:bg-primary/20 shadow-sm"
-            >
-              🏝️ Pulau Jawa
-            </Badge>
-          </motion.div>
-        </CardHeader>
-        
-        <CardContent className="transition-all duration-300 space-y-4">
-          <motion.div 
-            className="h-[650px] w-full rounded-xl overflow-hidden border border-border/30 bg-gradient-to-br from-background via-muted/10 to-background shadow-inner"
-            whileHover={{ scale: 1.002 }}
-            transition={{ duration: 0.3, ease: "easeOut" }}
-          >
-            {renderMapContent()}
-          </motion.div>
-          
-          <motion.div 
-            className="flex justify-between items-center pt-2 border-t border-border/30"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4, duration: 0.3 }}
-          >
-            <div className="flex items-center gap-3">
-              <MapLegend />
-              <div className="h-4 w-px bg-border/50" />
-              <motion.div 
-                className="text-sm font-medium text-muted-foreground flex items-center gap-2"
-                whileHover={{ scale: 1.02 }}
-              >
-                <div className="h-2 w-2 bg-primary rounded-full animate-pulse" />
-                {geojsonData ? `${geojsonData.features.length} Wilayah Tersedia` : 'Memuat data...'}
-              </motion.div>
-            </div>
-            
-            <motion.div 
-              className="flex items-center gap-2 text-xs text-muted-foreground/80"
-              whileHover={{ scale: 1.05 }}
-            >
-              <InfoIcon className="h-3 w-3" />
-              <span>Klik wilayah untuk detail data asli</span>
-            </motion.div>
-          </motion.div>
-        </CardContent>
-        
-        <CardFooter className="pt-0 pb-6">
-          <div className="w-full bg-gradient-to-r from-transparent via-border/20 to-transparent h-px" />
-          <motion.div 
-            className="mt-4 flex items-center justify-center gap-2 text-xs text-muted-foreground/60"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.6 }}
-          >
-            <MapPinIcon className="h-3 w-3" />
-            <span>Data terkini dari sistem monitoring kesehatan</span>
-          </motion.div>
-        </CardFooter>
-      </Card>
-    </motion.div>
+          <Badge variant="secondary">Live</Badge>
+        </div>
+      </CardHeader>
+      <CardContent className="flex-grow grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="md:col-span-2 h-[500px] rounded-lg overflow-hidden relative">
+          {renderMapContent()}
+        </div>
+        <div className="flex flex-col gap-4">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg">Navigasi Peta</CardTitle>
+              <CardDescription>Pilih layer atau cari wilayah</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-col gap-4">
+                <Select value={activeLayer} onValueChange={setActiveLayer}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Pilih Layer" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {mapLayers.map(layer => (
+                      <SelectItem key={layer.value} value={layer.value}>
+                        {layer.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                <Select value={selectedProvince} onValueChange={handleProvinceChange} disabled={wilayahLoading}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Pilih Provinsi" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableProvinces.map(province => (
+                      <SelectItem key={province} value={province}>
+                        {province}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                {wilayahError && <p className="text-xs text-destructive">Gagal memuat data wilayah.</p>}
+                <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={popoverOpen}
+                      className="w-full justify-between"
+                      disabled={wilayahLoading || !selectedProvince}
+                    >
+                      {selectedRegion
+                        ? filteredRegions.find((r) => r.toLowerCase() === selectedRegion.toLowerCase())
+                        : "Cari Kabupaten/Kota..."}
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[300px] p-0">
+                    <Command>
+                      <CommandInput placeholder="Cari wilayah..." />
+                      <CommandEmpty>Wilayah tidak ditemukan.</CommandEmpty>
+                      <CommandGroup>
+                        {filteredRegions.map((region, index) => (
+                          <CommandItem
+                            key={`${selectedProvince}-${region}-${index}`}
+                            value={region}
+                            onSelect={(currentValue) => {
+                              setSelectedRegion(currentValue === selectedRegion ? "" : currentValue);
+                              setPopoverOpen(false);
+                            }}
+                          >
+                            {region}
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="flex-grow">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg">Wilayah</CardTitle>
+              <CardDescription>Detail model untuk wilayah terpilih</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="text-xs text-muted-foreground flex items-center gap-1 mb-2">
+                <InfoIcon className="h-3 w-3" />
+                <span>Klik wilayah untuk detail model regresi</span>
+              </div>
+              <p className="text-sm font-mono bg-muted p-2 rounded-md break-words">
+                {selectedRegionName 
+                  ? generateModelEquation(selectedRegionName)
+                  : 'Pilih wilayah pada peta untuk melihat modelnya.'}
+              </p>
+            </CardContent>
+          </Card>
+          <MapLegend activeLayer={activeLayer} />
+        </div>
+      </CardContent>
+    </Card>
   );
 }

@@ -1,230 +1,158 @@
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import { useResearchData } from './useResearchData';
+import type { ResearchDataPoint, GWNBRCoefficient } from '@/lib/data/research-data';
 
-interface MapRegionData {
-  name: string;
-  cases: number;
-  kepadatan: number;
-  sanitasi: number;
-  airMinumLayak: number;
-  giziKurang: number;
-  riskLevel: 'High' | 'Medium-high' | 'Medium' | 'Low' | 'Unknown';
-  variabelSignifikan?: string;
-}
+const gray = '#B0B0B0';
 
-interface UseMapDataReturn {
-  getRegionColor: (name: string) => string;
-  getRegionData: (name: string) => MapRegionData | null;
-  generateTooltipContent: (properties: Record<string, unknown>) => string;
-  loading: boolean;
-  error: string | null;
-}
+/**
+ * Custom hook to provide map-related data and styling functions.
+ */
 
-export function useMapData(): UseMapDataReturn {
-  const { rawData, loading, error } = useResearchData();
+export const useMapData = () => {
+  const { rawData: researchData, coefficients, loading, error } = useResearchData();
 
-  // Fungsi untuk menentukan risk level berdasarkan data penelitian aktual
-  const calculateRiskLevel = useCallback((cases: number): 'High' | 'Medium-high' | 'Medium' | 'Low' | 'Unknown' => {
-    // Berdasarkan distribusi data penelitian yang sebenarnya
-    if (cases >= 8000) return 'High';       // > 8000 kasus
-    if (cases >= 4000) return 'Medium-high'; // 4000-8000 kasus  
-    if (cases >= 2000) return 'Medium';      // 2000-4000 kasus
-    if (cases > 0) return 'Low';             // < 2000 kasus
-    return 'Unknown';
-  }, []);
+  const regionNames = useMemo(() => {
+    if (!researchData) return [];
+    const names = researchData.map(d => d.NAMOBJ).filter(Boolean);
+    return [...new Set(names)].sort();
+  }, [researchData]);
 
-  // Fungsi untuk normalisasi nama wilayah agar sesuai dengan data GeoJSON
-  const normalizeRegionName = useCallback((name: string): string => {
-    return name
-      .toLowerCase()
-      .replace(/kab\.|kabupaten|kota|adm\.|administrasi/gi, '')
-      .replace(/\s+/g, ' ')
-      .replace(/[^a-z0-9\s]/g, '') // Hapus karakter khusus
-      .trim();
-  }, []);
+  const findRegionData = useCallback(
+    (regionName: string): ResearchDataPoint | undefined => {
+      if (!researchData || !regionName) return undefined;
+      // Normalize both names for better matching
+      const normalizedRegionName = regionName.replace(/^KABUPATEN\s/i, '').toLowerCase();
+      return researchData.find((item) => item.NAMOBJ?.toLowerCase().includes(normalizedRegionName));
+    },
+    [researchData]
+  );
 
-  // Fungsi untuk mencocokkan nama wilayah dengan data penelitian
-  const findRegionData = useCallback((geoJsonName: string) => {
-    if (!rawData || rawData.length === 0) {
-      return null;
-    }
+  const getSignificanceColor = (regionData: ResearchDataPoint): string => {
+    const significantVars = regionData.VariabelSignifikan;
+    if (!significantVars) return gray;
+    const codes = new Set(significantVars.replace(/"/g, '').split(',').map((code: string) => code.trim()));
+
+    const has = (v: string) => codes.has(v);
+
+    if (has('X1') && has('X3') && has('X4') && codes.size === 3) return '#b91c1c'; // Dark Red
+    if (has('X1') && has('X4') && codes.size === 2) return '#581c87'; // Dark Purple
+    if (has('X3') && has('X4') && codes.size === 2) return '#166534'; // Green
+    if (has('X1') && codes.size === 1) return '#facc15'; // Yellow
+    if (has('X3') && codes.size === 1) return '#2563eb'; // Blue
+    if (has('X4') && codes.size === 1) return '#9333ea'; // Purple
     
-    const normalizedGeoName = normalizeRegionName(geoJsonName);
-    
-    // Coba berbagai kemungkinan nama properti dari GeoJSON
-    const possibleNames = [
-      geoJsonName,
-      normalizedGeoName,
-      geoJsonName.replace(/^(KAB\.|KOTA|KABUPATEN)/i, '').trim(),
-      geoJsonName.replace(/^(KAB\s|KOTA\s|KABUPATEN\s)/i, '').trim()
-    ];
+    return gray;
+  };
 
-    // Pertama, coba exact match
-    for (const possibleName of possibleNames) {
-      const found = rawData.find(item => {
-        if (!item || !item.NAMOBJ) return false;
-        
-        const dataName = normalizeRegionName(item.NAMOBJ);
-        const searchName = normalizeRegionName(possibleName);
-        
-        return dataName === searchName || 
-               item.NAMOBJ.toLowerCase() === possibleName.toLowerCase();
-      });
-      
-      if (found) return found;
-    }
+  const variableThresholds: Record<string, { medium: number; high: number }> = {
+    Penemuan: { medium: 2425, high: 6212 },
+    GiziKurang: { medium: 2068, high: 4933 },
+    IMD: { medium: 44.3, high: 81.6 },
+    RokokPerkapita: { medium: 12.067, high: 15.538 },
+    Kepadatan: { medium: 4619, high: 12332 },
+    AirMinumLayak: { medium: 87.560, high: 95.940 },
+    Sanitasi: { medium: 66.7, high: 86.36 },
+  };
 
-    // Jika tidak ada exact match, coba partial match
-    for (const possibleName of possibleNames) {
-      const found = rawData.find(item => {
-        if (!item || !item.NAMOBJ) return false;
-        
-        const dataName = normalizeRegionName(item.NAMOBJ);
-        const searchName = normalizeRegionName(possibleName);
-        
-        // Cek apakah salah satu mengandung yang lain (minimal 3 karakter)
-        if (searchName.length >= 3 && dataName.length >= 3) {
-          return dataName.includes(searchName) || searchName.includes(dataName);
+  const getChoroplethColor = (value: number, layer: string): string => {
+    const thresholds = variableThresholds[layer];
+    if (!thresholds || isNaN(value) || value === null) return gray;
+
+    if (value <= thresholds.medium) return '#fef08a'; // Low
+    if (value <= thresholds.high) return '#f97316'; // Medium
+    return '#b91c1c'; // High
+  };
+
+  const getFeatureStyle = useCallback(
+    (feature: any, activeLayer: string) => {
+      const regionName = feature?.properties?.NAMOBJ || feature?.properties?.WADMKK || "";
+      const regionData = findRegionData(regionName);
+
+      let fillColor = gray;
+
+      if (regionData && researchData) {
+        if (activeLayer === 'significance') {
+          fillColor = getSignificanceColor(regionData);
+        } else {
+          const value = parseFloat(regionData[activeLayer as keyof ResearchDataPoint] as string);
+          fillColor = getChoroplethColor(value, activeLayer);
         }
-        
-        return false;
-      });
-      
-      if (found) return found;
-    }
-    
-    return null;
-  }, [rawData, normalizeRegionName]);
-
-  const getRegionColor = useCallback((name: string): string => {
-    if (!rawData || rawData.length === 0) return '#60a5fa';
-    
-    const regionData = findRegionData(name);
-    
-    if (regionData && regionData.Penemuan !== undefined) {
-      const riskLevel = calculateRiskLevel(regionData.Penemuan);
-      switch (riskLevel) {
-        case 'High':
-          return '#dc2626'; // Red-600
-        case 'Medium-high':
-          return '#ea580c'; // Orange-600
-        case 'Medium':
-          return '#d97706'; // Amber-600  
-        case 'Low':
-          return '#16a34a'; // Green-600
-        default:
-          return '#2563eb'; // Blue-600
       }
-    }
-    
-    return '#6b7280'; // Gray-500 untuk data tidak ditemukan
-  }, [rawData, findRegionData, calculateRiskLevel]);
 
-  const getRegionData = useCallback((name: string): MapRegionData | null => {
-    if (!rawData || rawData.length === 0) return null;
-    
-    const regionData = findRegionData(name);
-    
-    if (regionData) {
       return {
-        name: regionData.NAMOBJ || name,
-        cases: regionData.Penemuan || 0,
-        kepadatan: regionData.Kepadatan || 0,
-        sanitasi: regionData.Sanitasi || 0,
-        airMinumLayak: regionData.AirMinumLayak || 0,
-        giziKurang: regionData.GiziKurang || 0,
-        riskLevel: calculateRiskLevel(regionData.Penemuan || 0),
-        variabelSignifikan: regionData.VariabelSignifikan
+        fillColor,
+        color: 'rgba(15, 20, 25, 0.2)',
+        weight: 1.5,
+        fillOpacity: 0.75,
       };
-    }
-    
-    return null;
-  }, [rawData, findRegionData, calculateRiskLevel]);
+    },
+    [researchData, findRegionData]
+  );
 
-  const generateTooltipContent = useCallback((properties: Record<string, unknown>): string => {
-    // Coba berbagai kemungkinan nama properti dari GeoJSON
-    const nama = (properties.NAMOBJ || 
-                  properties.WADMKK || 
-                  properties.NAME_2 || 
-                  properties.NAME_1 ||
-                  properties.name ||
-                  '(Tanpa Nama)') as string;
-    
-    const regionData = getRegionData(nama);
-    
-    // Simple debug log
-    if (!regionData) {
-      console.log(`No data found for region: ${nama}`);
-    }
-    
-    if (regionData) {
-      const getRiskColorClass = (riskLevel: string) => {
-        switch (riskLevel) {
-          case 'High': return 'text-red-600';
-          case 'Medium-high': return 'text-orange-600';
-          case 'Medium': return 'text-amber-600';
-          case 'Low': return 'text-green-600';
-          default: return 'text-gray-600';
-        }
-      };
+  const generateTooltipContent = useCallback(
+    (feature: any): string => {
+      const regionName = feature?.properties?.NAMOBJ || feature?.properties?.WADMKK || "Unknown Region";
+      const regionData = findRegionData(regionName);
+
+      if (loading) return 'Memuat data...';
+      if (error) return `Error: ${error}`;
+      if (!regionData) return `${regionName}<br>Data tidak ditemukan.`;
+
+      const regionNameFromFeature = regionData.NAMOBJ || 'N/A';
+      const formatValue = (value: any) => (value !== undefined && value !== null) ? value.toLocaleString() : 'N/A';
 
       return `
-        <div class="map-tooltip">
-          <h3 class="font-bold text-base text-gray-900">${regionData.name}</h3>
-          <div class="text-sm mt-2 space-y-1">
-            <div class="flex justify-between">
-              <span class="font-medium text-gray-600">Kasus Pneumonia:</span> 
-              <span class="font-bold text-gray-900">${regionData.cases.toLocaleString()}</span>
-            </div>
-            <div class="flex justify-between">
-              <span class="font-medium text-gray-600">Kepadatan Penduduk:</span> 
-              <span class="text-gray-800">${regionData.kepadatan.toLocaleString()}/km²</span>
-            </div>
-            <div class="flex justify-between">
-              <span class="font-medium text-gray-600">Sanitasi Layak:</span> 
-              <span class="text-gray-800">${regionData.sanitasi.toFixed(1)}%</span>
-            </div>
-            <div class="flex justify-between">
-              <span class="font-medium text-gray-600">Air Minum Layak:</span> 
-              <span class="text-gray-800">${regionData.airMinumLayak.toFixed(1)}%</span>
-            </div>
-            <div class="flex justify-between">
-              <span class="font-medium text-gray-600">Gizi Kurang:</span> 
-              <span class="text-gray-800">${regionData.giziKurang.toLocaleString()}</span>
-            </div>
-            <div class="flex justify-between">
-              <span class="font-medium text-gray-600">Tingkat Risiko:</span> 
-              <span class="font-bold ${getRiskColorClass(regionData.riskLevel)}">
-                ${regionData.riskLevel}
-              </span>
-            </div>
-            ${regionData.variabelSignifikan ? 
-              `<div class="mt-2 p-2 bg-blue-50 rounded border-l-2 border-blue-400">
-                <span class="font-medium text-blue-700">Variabel Signifikan:</span><br>
-                <span class="text-blue-800 text-xs">${regionData.variabelSignifikan}</span>
-              </div>` 
-              : ''
-            }
-          </div>
+        <div style="font-family: Arial, sans-serif; font-size: 14px; min-width: 250px;">
+          <strong style="font-size: 16px; color: #333;">${regionNameFromFeature}</strong>
+          <hr style="margin: 4px 0;"/>
+          <p><strong>Kasus Pneumonia:</strong> ${formatValue(regionData.Penemuan)}</p>
+          <p><strong>Gizi Kurang:</strong> ${formatValue(regionData.GiziKurang)}%</p>
+          <p><strong>IMD:</strong> ${formatValue(regionData.IMD)}%</p>
+          <p><strong>Perokok/Kapita:</strong> ${formatValue(regionData.RokokPerkapita)}%</p>
+          <p><strong>Kepadatan Penduduk:</strong> ${formatValue(regionData.Kepadatan)} jiwa/km²</p>
+          <p><strong>Sanitasi Layak:</strong> ${formatValue(regionData.Sanitasi)}%</p>
+          <p><strong>Air Minum Layak:</strong> ${formatValue(regionData.AirMinumLayak)}%</p>
+          <hr style="margin: 4px 0;"/>
+          <strong style="color: #b91c1c;">Variabel Signifikan:</strong>
+          <p>${regionData.VariabelSignifikan?.replace(/"/g, '') || 'Tidak ada'}</p>
         </div>
       `;
-    }
-    
-    return `
-      <div class="map-tooltip">
-        <h3 class="font-bold text-base text-gray-900">${nama}</h3>
-        <div class="text-sm mt-2">
-          <div class="text-gray-600">Data penelitian tidak tersedia untuk wilayah ini</div>
-        </div>
-      </div>
-    `;
-  }, [getRegionData]);
+    },
+    [findRegionData]
+  );
 
-  return {
-    getRegionColor,
-    getRegionData,
-    generateTooltipContent,
+  const generateModelEquation = useCallback(
+    (regionName: string): string => {
+      if (!coefficients || !regionName) return 'Pilih wilayah untuk melihat model.';
+
+      const normalizedRegionName = regionName.replace(/^KABUPATEN\s/i, '').toLowerCase();
+      const regionCoeffs = coefficients.find(
+        (c: GWNBRCoefficient) => c.Region?.toLowerCase().includes(normalizedRegionName)
+      );
+
+      if (!regionCoeffs) return `Model untuk ${regionName} tidak ditemukan.`;
+
+      const formatCoeff = (val: number) => (val >= 0 ? `+ ${val.toFixed(3)}` : `- ${Math.abs(val).toFixed(3)}`);
+
+      let equation = `Y = ${regionCoeffs.Intercept.toFixed(3)} `;
+      if (Math.abs(regionCoeffs.GiziKurangZ) > 1.96) equation += `${formatCoeff(regionCoeffs.GiziKurangKoef)}*X1 `;
+      if (Math.abs(regionCoeffs.IMDZ) > 1.96) equation += `${formatCoeff(regionCoeffs.IMDKoef)}*X2 `;
+      if (Math.abs(regionCoeffs.RokokPerkapitaZ) > 1.96) equation += `${formatCoeff(regionCoeffs.RokokPerkapitaKoef)}*X3 `;
+      if (Math.abs(regionCoeffs.KepadatanZ) > 1.96) equation += `${formatCoeff(regionCoeffs.KepadatanKoef)}*X4 `;
+      if (Math.abs(regionCoeffs.AirMinumZ) > 1.96) equation += `${formatCoeff(regionCoeffs.AirMinumKoef)}*X5 `;
+      if (Math.abs(regionCoeffs.SanitasiZ) > 1.96) equation += `${formatCoeff(regionCoeffs.SanitasiKoef)}*X6 `;
+
+      return equation.trim();
+    },
+    [coefficients]
+  );
+
+  return { 
     loading,
-    error
+    error,
+    regionNames,
+    getFeatureStyle,
+    generateTooltipContent,
+    generateModelEquation,
   };
-}
+};

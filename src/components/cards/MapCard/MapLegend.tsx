@@ -1,47 +1,60 @@
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import { Button } from "@/components/ui/button";
-import { InfoIcon, TrendingUpIcon } from "lucide-react";
+import { InfoIcon, LayersIcon } from "lucide-react";
 import { motion } from "framer-motion";
+import { useMemo } from 'react';
 
-export function MapLegend() {
-  const legendItems = [
-    { 
-      level: 'high', 
-      label: 'Risiko Tinggi', 
-      range: '>100 kasus', 
-      color: 'bg-gradient-to-r from-red-500 to-red-600',
-      textColor: 'text-red-600',
-      bgColor: 'bg-red-50',
-      emoji: '🔴'
-    },
-    { 
-      level: 'medium-high', 
-      label: 'Risiko Sedang-Tinggi', 
-      range: '50-100 kasus', 
-      color: 'bg-gradient-to-r from-orange-500 to-orange-600',
-      textColor: 'text-orange-600',
-      bgColor: 'bg-orange-50',
-      emoji: '🟠'
-    },
-    { 
-      level: 'medium', 
-      label: 'Risiko Sedang', 
-      range: '25-50 kasus', 
-      color: 'bg-gradient-to-r from-yellow-500 to-yellow-600',
-      textColor: 'text-yellow-600',
-      bgColor: 'bg-yellow-50',
-      emoji: '🟡'
-    },
-    { 
-      level: 'low', 
-      label: 'Risiko Rendah', 
-      range: '<25 kasus', 
-      color: 'bg-gradient-to-r from-green-500 to-green-600',
-      textColor: 'text-green-600',
-      bgColor: 'bg-green-50',
-      emoji: '🟢'
+interface MapLegendProps {
+  activeLayer: string;
+}
+
+const significanceLegend = {
+  title: 'Legenda Signifikansi Variabel',
+  items: [
+    { label: 'Signifikan (X1, X3, X4)', color: '#b91c1c' },
+    { label: 'Signifikan (X1, X4)', color: '#581c87' },
+    { label: 'Signifikan (X3, X4)', color: '#166534' },
+    { label: 'Signifikan (X1)', color: '#facc15' },
+    { label: 'Signifikan (X3)', color: '#2563eb' },
+    { label: 'Signifikan (X4)', color: '#9333ea' },
+    { label: 'Tidak Signifikan / Lainnya', color: '#B0B0B0' },
+  ]
+};
+
+const choroplethLegend = {
+  title: 'Legenda Peta Choropleth',
+  items: [
+    { label: 'Tinggi', color: '#b91c1c' },
+    { label: '', color: '#ef4444' },
+    { label: '', color: '#f97316' },
+    { label: '', color: '#facc15' },
+    { label: 'Rendah', color: '#fef08a' },
+  ]
+};
+
+const layerTitles: Record<string, string> = {
+  significance: 'Legenda Signifikansi Variabel',
+  Penemuan: 'Legenda Tingkat Penemuan (Y)',
+  GiziKurang: 'Legenda Gizi Kurang (X1)',
+  IMD: 'Legenda IMD (X2)',
+  RokokPerkapita: 'Legenda Rokok per Kapita (X3)',
+  Kepadatan: 'Legenda Kepadatan Penduduk (X4)',
+  AirMinumLayak: 'Legenda Air Minum Layak (X5)',
+  Sanitasi: 'Legenda Sanitasi (X6)',
+};
+
+export function MapLegend({ activeLayer }: MapLegendProps) {
+  const isSignificance = activeLayer === 'significance';
+  
+  const legend = useMemo(() => {
+    if (isSignificance) {
+      return significanceLegend;
     }
-  ];
+    return {
+      ...choroplethLegend,
+      title: layerTitles[activeLayer] || choroplethLegend.title,
+    };
+  }, [activeLayer, isSignificance]);
 
   return (
     <HoverCard>
@@ -51,9 +64,8 @@ export function MapLegend() {
           size="sm"
           className="transition-all duration-300 hover:scale-105 hover:shadow-lg hover:border-primary/30 hover:bg-primary/5 group"
         >
-          <InfoIcon className="w-4 h-4 mr-2 group-hover:text-primary transition-colors" />
+          <LayersIcon className="w-4 h-4 mr-2 group-hover:text-primary transition-colors" />
           <span className="font-medium">Legenda</span>
-          <TrendingUpIcon className="w-3 h-3 ml-1 opacity-60" />
         </Button>
       </HoverCardTrigger>
       
@@ -62,46 +74,48 @@ export function MapLegend() {
           initial={{ opacity: 0, y: -10, scale: 0.95 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           transition={{ duration: 0.2, ease: "easeOut" }}
-          className="p-6"
+          className="p-4"
         >
-          <div className="flex items-center gap-2 mb-4 pb-3 border-b border-border/30">
-            <div className="h-2 w-2 bg-primary rounded-full animate-pulse" />
-            <h4 className="font-bold text-base text-foreground">Tingkat Risiko Pneumonia</h4>
+          <div className="flex items-center gap-2 mb-3 pb-3 border-b border-border/30">
+            <div className="h-2 w-2 bg-primary rounded-full" />
+            <h4 className="font-semibold text-sm text-foreground">{legend.title}</h4>
           </div>
           
-          <div className="space-y-3">
-            {legendItems.map((item, index) => (
+          <div className="space-y-2">
+            {legend.items.map((item, index) => (
               <motion.div
-                key={item.level}
-                initial={{ opacity: 0, x: -20 }}
+                key={item.label || index}
+                initial={{ opacity: 0, x: -15 }}
                 animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: index * 0.1, duration: 0.3 }}
-                className={`flex items-center space-x-4 p-3 rounded-xl hover:${item.bgColor} hover:scale-105 transition-all duration-200 cursor-pointer group`}
+                transition={{ delay: index * 0.05, duration: 0.2 }}
+                className={`flex items-center space-x-3`}
               >
-                <div className="flex items-center gap-2">
-                  <span className="text-lg">{item.emoji}</span>
-                  <div className={`w-4 h-4 rounded-full ${item.color} ring-2 ring-offset-2 ring-transparent group-hover:ring-current shadow-sm`} />
-                </div>
-                <div className="flex-1">
-                  <p className={`text-sm font-semibold ${item.textColor} group-hover:font-bold transition-all`}>
-                    {item.label}
-                  </p>
-                  <p className="text-xs text-muted-foreground font-medium">{item.range}</p>
-                </div>
+                <div className={`w-4 h-4 rounded-md shadow-sm`} style={{ backgroundColor: item.color }} />
+                <p className="text-xs text-muted-foreground font-medium">
+                  {item.label}
+                </p>
               </motion.div>
             ))}
           </div>
-          
-          <motion.div 
-            className="mt-4 pt-3 border-t border-border/30 text-center"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.5 }}
-          >
-            <p className="text-xs text-muted-foreground">
-              Data diperbarui secara real-time
-            </p>
-          </motion.div>
+
+          {/* Gradient bar for choropleth */}
+          {!isSignificance && (
+            <motion.div 
+              className="mt-3 pt-3 border-t border-border/30"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.3 }}
+            >
+              <div className="flex justify-between text-xs text-muted-foreground font-medium mb-1">
+                <span>Rendah</span>
+                <span>Tinggi</span>
+              </div>
+              <div 
+                className="h-3 w-full rounded-md bg-gradient-to-r from-[#fef08a] via-[#f97316] to-[#b91c1c] shadow-inner"
+              />
+            </motion.div>
+          )}
+
         </motion.div>
       </HoverCardContent>
     </HoverCard>

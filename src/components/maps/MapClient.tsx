@@ -11,17 +11,19 @@ import "leaflet/dist/leaflet.css";
 import "leaflet-defaulticon-compatibility/dist/leaflet-defaulticon-compatibility.css";
 import "leaflet-defaulticon-compatibility";
 
-interface MapProps {
-  data: FeatureCollection;
-  onRegionSelect?: (region: string) => void;
+interface MapClientProps {
+  data: FeatureCollection | null;
+  onRegionSelect?: (region: string | null) => void;
+  activeLayer: string;
+  selectedRegion?: string;
 }
 
-const MapClient = ({ data, onRegionSelect }: MapProps) => {
-  const [selectedRegion, setSelectedRegion] = useState<string | null>(null);
+const MapClient = ({ data, onRegionSelect, activeLayer, selectedRegion }: MapClientProps) => {
+  const [internalSelectedRegion, setSelectedRegion] = useState<string | null>(null);
   const mapRef = useRef<L.Map | null>(null);
   const geoJsonRef = useRef<L.GeoJSON | null>(null);
   
-  const { getRegionColor, generateTooltipContent } = useMapData();
+  const { getFeatureStyle, generateTooltipContent } = useMapData();
 
   // Define bounds for Indonesia with some padding using useMemo
   const indonesiaBounds: L.LatLngBoundsExpression = useMemo(() => [
@@ -30,6 +32,26 @@ const MapClient = ({ data, onRegionSelect }: MapProps) => {
   ], []);
   
   // Define more specific bounds for Java Island using useMemo
+  useEffect(() => {
+    if (selectedRegion && geoJsonRef.current && mapRef.current) {
+      const layers = geoJsonRef.current.getLayers();
+      const targetLayer = layers.find(layer => {
+        const feature = (layer as any).feature;
+        const regionName = feature?.properties?.NAMOBJ || feature?.properties?.WADMKK;
+        return regionName?.toLowerCase() === selectedRegion.toLowerCase();
+      });
+
+      if (targetLayer) {
+        const bounds = (targetLayer as L.GeoJSON).getBounds();
+        mapRef.current.flyToBounds(bounds, {
+          padding: [50, 50],
+          maxZoom: 11,
+          duration: 1.5,
+        });
+      }
+    }
+  }, [selectedRegion]);
+
   const javaBounds: L.LatLngBoundsExpression = useMemo(() => [
     [-8.8, 105.0], // South West corner
     [-5.0, 114.6], // North East corner
@@ -38,7 +60,7 @@ const MapClient = ({ data, onRegionSelect }: MapProps) => {
   // Function to handle events for each GeoJSON feature
   const onEachFeature = (feature: GeoJSON.Feature, layer: L.Layer) => {
     const properties = feature?.properties || {};
-    const tooltipContent = generateTooltipContent(properties);
+    const tooltipContent = generateTooltipContent(feature);
     
     layer.bindTooltip(tooltipContent, {
       className: 'custom-tooltip',
@@ -48,58 +70,33 @@ const MapClient = ({ data, onRegionSelect }: MapProps) => {
       offset: [0, -10]
     });
 
-    // Mouse events for highlighting with Twitter-style interactions
     layer.on({
       mouseover: (e: L.LeafletMouseEvent) => {
         const targetLayer = e.target as L.Path;
-        targetLayer.setStyle({
-          weight: 3,
-          color: 'oklch(0.6397 0.1720 36.4421)', // Primary color from CSS variables
-          fillOpacity: 0.85,
-          dashArray: '',
-        });
+        targetLayer.setStyle({ weight: 3, color: '#000' });
         targetLayer.bringToFront();
-        
-        // Add smooth transition effect with type assertion
-        const pathElement = (targetLayer as L.Path & { _path?: HTMLElement })._path;
-        if (pathElement) {
-          pathElement.style.transition = 'all 0.2s ease-out';
-        }
       },
       mouseout: (e: L.LeafletMouseEvent) => {
         const targetLayer = e.target as L.Path;
-        geoJsonRef.current?.resetStyle(targetLayer);
-        
-        // Reset transition
-        const pathElement = (targetLayer as L.Path & { _path?: HTMLElement })._path;
-        if (pathElement) {
-          pathElement.style.transition = '';
-        }
+        layer.setStyle(getFeatureStyle(feature, activeLayer));
       },
       click: (e: L.LeafletMouseEvent) => {
         const regionName = properties?.NAMOBJ || properties?.WADMKK || properties?.NAME_2 || "Unknown";
-        setSelectedRegion(regionName);
-        onRegionSelect?.(regionName);
         
-        // Twitter-style zoom animation
+        // If clicking the same region, deselect it. Otherwise, select the new one.
+        const newSelectedRegion = internalSelectedRegion === regionName ? null : regionName;
+        setSelectedRegion(newSelectedRegion);
+        onRegionSelect?.(newSelectedRegion || '');
+
         const map = mapRef.current;
-        const targetLayer = e.target as L.Path & { getBounds?: () => L.LatLngBounds };
-        if (map && targetLayer.getBounds) {
-          map.flyToBounds(targetLayer.getBounds(), {
+        if (map && (e.target as any).getBounds) {
+          map.flyToBounds((e.target as any).getBounds(), {
             padding: [30, 30],
             maxZoom: 10,
             duration: 1.2,
             easeLinearity: 0.25
           });
         }
-        
-        // Add selection highlight
-        targetLayer.setStyle({
-          weight: 4,
-          color: 'oklch(0.6397 0.1720 36.4421)',
-          fillOpacity: 0.9,
-          dashArray: '5, 5',
-        });
       }
     });
   };
@@ -219,20 +216,28 @@ const MapClient = ({ data, onRegionSelect }: MapProps) => {
         </LayersControl>
         
         {/* Enhanced GeoJSON with Twitter-style interactions */}
-        <GeoJSON 
-          data={data} 
-          style={(feature) => ({
-            fillColor: getRegionColor(feature?.properties?.NAMOBJ || feature?.properties?.WADMKK || feature?.properties?.NAME_2 || ""),
-            color: 'rgba(15, 20, 25, 0.2)',
-            weight: 1.5,
-            fillOpacity: 0.75,
-            className: 'transition-all duration-200 ease-out hover:drop-shadow-lg'
-          })}
-          onEachFeature={onEachFeature}
-          ref={(layer) => {
-            if (layer) geoJsonRef.current = layer;
-          }}
-        />
+        {data && (
+          <GeoJSON 
+            key={selectedRegion || 'initial'}
+            data={data} 
+            style={(feature) => {
+              const baseStyle = getFeatureStyle(feature, activeLayer);
+              const regionName = feature?.properties?.NAMOBJ || feature?.properties?.WADMKK || feature?.properties?.NAME_2 || "";
+              const isSelected = regionName === selectedRegion;
+              
+              return {
+                ...baseStyle,
+                color: isSelected ? '#0f1419' : 'rgba(15, 20, 25, 0.2)',
+                weight: isSelected ? 3 : baseStyle.weight,
+                fillOpacity: isSelected ? 0.9 : baseStyle.fillOpacity,
+              };
+            }}
+            onEachFeature={onEachFeature}
+            ref={(layer) => {
+              if (layer) geoJsonRef.current = layer;
+            }}
+          />
+        )}
       </MapContainer>
       
       {/* Selection indicator */}
