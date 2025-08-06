@@ -1,7 +1,7 @@
 "use client"
 
-import { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useState, useEffect, useCallback } from 'react';
+// import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useResearchData } from '@/hooks/useResearchData';
 import { TrendingUpIcon, TrendingDownIcon, MinusIcon } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -29,6 +29,56 @@ const CorrelationStatCard = ({ value, title, subtitle, bgGradient, textColor }: 
   </div>
 );
 
+// Helper functions moved outside the component to prevent recreation on re-renders
+const calculatePearsonCorrelation = (x: (number | unknown)[], y: (number | unknown)[]): number => {
+  const validX = x.map(v => typeof v === 'number' ? v : 0);
+  const validY = y.map(v => typeof v === 'number' ? v : 0);
+  const n = validX.length;
+  if (n === 0) return 0;
+
+  const sumX = validX.reduce((a, b) => a + b, 0);
+  const sumY = validY.reduce((a, b) => a + b, 0);
+  const sumXY = validX.reduce((sum, xi, i) => sum + xi * validY[i], 0);
+  const sumX2 = validX.reduce((sum, xi) => sum + xi * xi, 0);
+  const sumY2 = validY.reduce((sum, yi) => sum + yi * yi, 0);
+
+  const numerator = n * sumXY - sumX * sumY;
+  const denominator = Math.sqrt((n * sumX2 - sumX * sumX) * (n * sumY2 - sumY * sumY));
+
+  return denominator === 0 ? 0 : numerator / denominator;
+};
+
+const calculatePValue = (r: number, n: number): number => {
+  if (n < 3 || Math.abs(r) === 1) return 0; // p-value is 0 for perfect correlation
+  if (n < 3) return 1; // Not enough data
+  const t = r * Math.sqrt((n - 2) / (1 - r * r));
+  // This is a simplified approximation and not a statistically accurate p-value.
+  // For a real-world application, a statistical library would be recommended.
+  return 2 * (1 - (0.5 * (1 + Math.tanh(t / Math.sqrt(2)))));
+};
+
+const getCorrelationInterpretation = (correlation: number): string => {
+  const absCorr = Math.abs(correlation);
+  if (absCorr > CORRELATION_THRESHOLDS.STRONG) return correlation > 0 ? 'Hubungan Kuat Positif' : 'Hubungan Kuat Negatif';
+  if (absCorr > CORRELATION_THRESHOLDS.MODERATE) return correlation > 0 ? 'Hubungan Sedang Positif' : 'Hubungan Sedang Negatif';
+  if (absCorr > CORRELATION_THRESHOLDS.WEAK) return correlation > 0 ? 'Hubungan Lemah Positif' : 'Hubungan Lemah Negatif';
+  return 'Hubungan Sangat Lemah';
+};
+
+const getCorrelationIcon = (correlation: number) => {
+  if (correlation > CORRELATION_THRESHOLDS.MODERATE) return <TrendingUpIcon className="h-4 w-4 text-red-500" />;
+  if (correlation < -CORRELATION_THRESHOLDS.MODERATE) return <TrendingDownIcon className="h-4 w-4 text-green-500" />;
+  return <MinusIcon className="h-4 w-4 text-gray-500" />;
+};
+
+const getCorrelationColor = (correlation: number) => {
+  const absCorr = Math.abs(correlation);
+  if (absCorr > CORRELATION_THRESHOLDS.STRONG) return correlation > 0 ? 'text-red-600' : 'text-green-600';
+  if (absCorr > CORRELATION_THRESHOLDS.MODERATE) return correlation > 0 ? 'text-orange-600' : 'text-blue-600';
+  if (absCorr > CORRELATION_THRESHOLDS.WEAK) return correlation > 0 ? 'text-yellow-600' : 'text-purple-600';
+  return 'text-gray-600';
+};
+
 interface CorrelationResult {
   variable: string;
   correlation: number;
@@ -40,14 +90,7 @@ export default function CorrelationAnalysis() {
   const { rawData } = useResearchData();
   const [correlations, setCorrelations] = useState<CorrelationResult[]>([]);
 
-  useEffect(() => {
-    if (rawData.length > 0) {
-      const correlationResults = calculateCorrelations(rawData);
-      setCorrelations(correlationResults);
-    }
-  }, [rawData]);
-
-  const calculateCorrelations = (data: any[]): CorrelationResult[] => {
+  const calculateCorrelations = useCallback((data: Record<string, unknown>[]): CorrelationResult[] => {
     if (data.length === 0) return [];
 
     const variables = [
@@ -74,51 +117,24 @@ export default function CorrelationAnalysis() {
         pValue: calculatePValue(correlation, data.length)
       };
     });
-  };
+  }, []);
 
-  const calculatePearsonCorrelation = (x: number[], y: number[]): number => {
-    const n = x.length;
-    if (n === 0) return 0;
+  useEffect(() => {
+    if (rawData.length > 0) {
+      const correlationResults = calculateCorrelations(rawData);
+      setCorrelations(correlationResults);
+    }
+  }, [rawData, calculateCorrelations]);
 
-    const sumX = x.reduce((a, b) => a + b, 0);
-    const sumY = y.reduce((a, b) => a + b, 0);
-    const sumXY = x.reduce((sum, xi, i) => sum + xi * y[i], 0);
-    const sumX2 = x.reduce((sum, xi) => sum + xi * xi, 0);
-    const sumY2 = y.reduce((sum, yi) => sum + yi * yi, 0);
 
-    const numerator = n * sumXY - sumX * sumY;
-    const denominator = Math.sqrt((n * sumX2 - sumX * sumX) * (n * sumY2 - sumY * sumY));
 
-    return denominator === 0 ? 0 : numerator / denominator;
-  };
 
-  const calculatePValue = (r: number, n: number): number => {
-    if (n < 3) return 1;
-    const t = Math.abs(r) * Math.sqrt((n - 2) / (1 - r * r));
-    return 2 * (1 - Math.tanh(Math.abs(t) / Math.sqrt(2)));
-  };
 
-  const getCorrelationInterpretation = (correlation: number): string => {
-    const absCorr = Math.abs(correlation);
-    if (absCorr > 0.7) return correlation > 0 ? 'Hubungan Kuat Positif' : 'Hubungan Kuat Negatif';
-    if (absCorr > 0.5) return correlation > 0 ? 'Hubungan Sedang Positif' : 'Hubungan Sedang Negatif';
-    if (absCorr > 0.3) return correlation > 0 ? 'Hubungan Lemah Positif' : 'Hubungan Lemah Negatif';
-    return 'Hubungan Sangat Lemah';
-  };
 
-  const getCorrelationIcon = (correlation: number) => {
-    if (correlation > 0.5) return <TrendingUpIcon className="h-4 w-4 text-red-500" />;
-    if (correlation < -0.5) return <TrendingDownIcon className="h-4 w-4 text-green-500" />;
-    return <MinusIcon className="h-4 w-4 text-gray-500" />;
-  };
 
-  const getCorrelationColor = (correlation: number) => {
-    const absCorr = Math.abs(correlation);
-    if (absCorr > 0.7) return correlation > 0 ? 'text-red-600' : 'text-green-600';
-    if (absCorr > 0.5) return correlation > 0 ? 'text-orange-600' : 'text-blue-600';
-    if (absCorr > 0.3) return correlation > 0 ? 'text-yellow-600' : 'text-purple-600';
-    return 'text-gray-600';
-  };
+
+
+
 
   if (correlations.length === 0) {
     return (
@@ -192,11 +208,11 @@ export default function CorrelationAnalysis() {
                   <div className="w-full bg-gray-200 rounded-full h-2">
                     <div
                       className={`h-2 rounded-full ${
-                        Math.abs(item.correlation) > 0.7
+                        Math.abs(item.correlation) > CORRELATION_THRESHOLDS.STRONG
                           ? 'bg-red-500'
-                          : Math.abs(item.correlation) > 0.5
+                          : Math.abs(item.correlation) > CORRELATION_THRESHOLDS.MODERATE
                           ? 'bg-orange-500'
-                          : Math.abs(item.correlation) > 0.3
+                          : Math.abs(item.correlation) > CORRELATION_THRESHOLDS.WEAK
                           ? 'bg-yellow-500'
                           : 'bg-gray-400'
                       }`}

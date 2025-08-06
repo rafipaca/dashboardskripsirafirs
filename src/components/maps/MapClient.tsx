@@ -15,10 +15,11 @@ interface MapClientProps {
   data: FeatureCollection | null;
   onRegionSelect?: (region: string | null) => void;
   activeLayer: string;
-  selectedRegion?: string;
+  selectedRegion?: string | null;
+  onPredictionSelect?: (regionName: string | null) => void;
 }
 
-const MapClient = ({ data, onRegionSelect, activeLayer, selectedRegion }: MapClientProps) => {
+const MapClient = ({ data, onRegionSelect, activeLayer, selectedRegion, onPredictionSelect }: MapClientProps) => {
   const [internalSelectedRegion, setSelectedRegion] = useState<string | null>(null);
   const mapRef = useRef<L.Map | null>(null);
   const geoJsonRef = useRef<L.GeoJSON | null>(null);
@@ -36,9 +37,9 @@ const MapClient = ({ data, onRegionSelect, activeLayer, selectedRegion }: MapCli
     if (selectedRegion && geoJsonRef.current && mapRef.current) {
       const layers = geoJsonRef.current.getLayers();
       const targetLayer = layers.find(layer => {
-        const feature = (layer as any).feature;
+        const feature = (layer as L.Layer & { feature?: { properties?: Record<string, unknown> } }).feature;
         const regionName = feature?.properties?.NAMOBJ || feature?.properties?.WADMKK;
-        return regionName?.toLowerCase() === selectedRegion.toLowerCase();
+        return typeof regionName === 'string' && regionName.toLowerCase() === selectedRegion.toLowerCase();
       });
 
       if (targetLayer) {
@@ -78,7 +79,7 @@ const MapClient = ({ data, onRegionSelect, activeLayer, selectedRegion }: MapCli
       },
       mouseout: (e: L.LeafletMouseEvent) => {
         const targetLayer = e.target as L.Path;
-        layer.setStyle(getFeatureStyle(feature, activeLayer));
+        targetLayer.setStyle(getFeatureStyle(feature, activeLayer));
       },
       click: (e: L.LeafletMouseEvent) => {
         const regionName = properties?.NAMOBJ || properties?.WADMKK || properties?.NAME_2 || "Unknown";
@@ -87,10 +88,15 @@ const MapClient = ({ data, onRegionSelect, activeLayer, selectedRegion }: MapCli
         const newSelectedRegion = internalSelectedRegion === regionName ? null : regionName;
         setSelectedRegion(newSelectedRegion);
         onRegionSelect?.(newSelectedRegion || '');
+        
+        if (onPredictionSelect) {
+          onPredictionSelect(newSelectedRegion);
+        }
 
         const map = mapRef.current;
-        if (map && (e.target as any).getBounds) {
-          map.flyToBounds((e.target as any).getBounds(), {
+        const target = e.target as L.Layer & { getBounds?: () => L.LatLngBounds };
+        if (map && target.getBounds) {
+          map.flyToBounds(target.getBounds(), {
             padding: [30, 30],
             maxZoom: 10,
             duration: 1.2,
@@ -218,10 +224,10 @@ const MapClient = ({ data, onRegionSelect, activeLayer, selectedRegion }: MapCli
         {/* Enhanced GeoJSON with Twitter-style interactions */}
         {data && (
           <GeoJSON 
-            key={selectedRegion || 'initial'}
+            key={`${activeLayer}-${selectedRegion || 'initial'}`}
             data={data} 
             style={(feature) => {
-              const baseStyle = getFeatureStyle(feature, activeLayer);
+              const baseStyle = feature ? getFeatureStyle(feature, activeLayer) : { weight: 1, fillOpacity: 0.7 };
               const regionName = feature?.properties?.NAMOBJ || feature?.properties?.WADMKK || feature?.properties?.NAME_2 || "";
               const isSelected = regionName === selectedRegion;
               

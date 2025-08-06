@@ -1,8 +1,7 @@
 import { useState } from 'react';
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { GRID_LAYOUTS, STATUS_COLORS } from '@/lib/constants';
 
@@ -35,12 +34,11 @@ interface ComparisonData {
 
 interface DataComparisonProps {
   data: ComparisonData[];
-  onTimeframeChange: (timeframe: string) => void;
 }
 
-export function DataComparison({ data, onTimeframeChange }: DataComparisonProps) {
+export function DataComparison({ data }: DataComparisonProps) {
   const [comparisonMode, setComparisonMode] = useState<'absolute' | 'percentage'>('absolute');
-  const [selectedRegions, setSelectedRegions] = useState<string[]>([]);
+
 
   const sortedData = [...data].sort((a, b) => b.current - a.current);
 
@@ -52,7 +50,13 @@ export function DataComparison({ data, onTimeframeChange }: DataComparisonProps)
         previous: 0
       }));
 
-  const CustomTooltip = ({ active, payload, label }: any) => {
+  const CustomTooltip = ({ active, payload, label }: {
+    active?: boolean;
+    payload?: Array<{
+      payload: ComparisonData;
+    }>;
+    label?: string;
+  }) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
       return (

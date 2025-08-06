@@ -1,19 +1,13 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { 
-  BarChart3Icon, 
   ShareIcon, 
   DownloadIcon, 
-  RefreshCwIcon, 
   FilterIcon,
   SearchIcon,
-  TrendingUpIcon,
-  CalendarIcon,
   InfoIcon,
-  PrinterIcon
+  TrendingUpIcon
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -32,12 +26,8 @@ interface DashboardHeaderProps {
 export function DashboardHeader({ 
   title = "Infografis Dashboard", 
   subtitle = "Visualisasi Data dan Analisis Interaktif",
-  dataSource = "Data Terbaru",
-  lastUpdated = new Date().toLocaleDateString('id-ID'),
-  totalDataPoints = 1250,
   onExport,
-  onShare,
-  onRefresh
+  onShare
 }: DashboardHeaderProps) {
   /**
    * Header dashboard yang disederhanakan

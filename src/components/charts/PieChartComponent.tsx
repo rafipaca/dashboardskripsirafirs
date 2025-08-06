@@ -6,9 +6,11 @@ import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { PieChartIcon } from "lucide-react";
 
+import type { ChartConfig } from "@/components/ui/chart"
+
 interface PieChartComponentProps {
-  data: any[];
-  config: any;
+  data: { name: string; value: number }[];
+  config: ChartConfig;
   title?: string;
   description?: string;
 }

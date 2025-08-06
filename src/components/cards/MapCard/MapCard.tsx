@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { InfoIcon, MapPinIcon } from "lucide-react";
 import { MapLegend } from "./MapLegend";
 import { MapLoadingState } from "./MapLoadingState";
+import { Feature, FeatureCollection } from "geojson";
 import { MapErrorState } from "./MapErrorState";
 import { useState, lazy, Suspense, useEffect } from "react";
 import { useMapData } from "@/hooks/useMapData";
@@ -19,11 +20,12 @@ import { useWilayahData } from '@/hooks/useWilayahData';
 const MapClient = lazy(() => import("@/components/maps/MapClient"));
 
 interface MapCardProps {
-  geojsonData: any;
+  geojsonData: FeatureCollection | null;
   isLoading: boolean;
   error: string | null;
   onRetry: () => void;
-  onRegionSelect?: (feature: any) => void;
+  onRegionSelect?: (regionName: string | null) => void;
+  onPredictionSelect?: (regionName: string | null) => void;
 }
 
 const mapLayers = [
@@ -37,21 +39,22 @@ const mapLayers = [
   { value: 'Sanitasi', label: 'Sanitasi (X6)' },
 ];
 
-export default function MapCard({ geojsonData, isLoading, error, onRetry, onRegionSelect }: MapCardProps) {
+export default function MapCard({ geojsonData, isLoading, error, onRetry, onRegionSelect, onPredictionSelect }: MapCardProps) {
   const [activeLayer, setActiveLayer] = useState('significance');
-  const [selectedRegionName, setSelectedRegionName] = useState<string>('');
+  const [selectedRegionName, setSelectedRegionName] = useState('');
   const { generateModelEquation } = useMapData();
+
   const { provinces: availableProvinces, regionsByProvince, loading: wilayahLoading, error: wilayahError } = useWilayahData();
 
   const [popoverOpen, setPopoverOpen] = useState(false);
   const [selectedProvince, setSelectedProvince] = useState('');
-  const [selectedRegion, setSelectedRegion] = useState('');
+  const [selectedRegion, setSelectedRegion] = useState<Feature | null>(null);
 
   const filteredRegions = regionsByProvince[selectedProvince] || [];
 
   const handleProvinceChange = (province: string) => {
     setSelectedProvince(province);
-    setSelectedRegion(''); // Reset region selection when province changes
+    setSelectedRegion(null); // Reset region selection when province changes
   };
 
   // Effect to set a default province once data is loaded
@@ -61,14 +64,38 @@ export default function MapCard({ geojsonData, isLoading, error, onRetry, onRegi
       const defaultProvince = availableProvinces.find(p => p.toUpperCase() === 'JAWA TIMUR') || availableProvinces[0];
       setSelectedProvince(defaultProvince);
     }
-  }, [availableProvinces, selectedProvince]);
+  }, [availableProvinces]);
 
-  const handleRegionSelect = (feature: any) => {
-    const regionName = feature?.properties?.NAMOBJ || feature?.properties?.WADMKK || "";
-    setSelectedRegionName(regionName);
-    if (onRegionSelect) {
-      onRegionSelect(feature);
-    }
+  const handleRegionSelect = (regionName: string | null) => {
+    setSelectedRegionName(regionName || '');
+    
+    // Find the feature that corresponds to the region name
+    // Try multiple property names and formats to match with GeoJSON data
+    const feature = geojsonData?.features.find(f => {
+      const props = f.properties;
+      const geoName = props?.NAMOBJ || props?.WADMKK || props?.nama_kab;
+      
+      if (!regionName || !geoName) return false;
+      
+      // Direct match
+      if (geoName === regionName) return true;
+      
+      // Try matching with "Kota" or "Kabupaten" prefix added to GeoJSON name
+      const kotaName = `Kota ${geoName}`;
+      const kabName = `Kabupaten ${geoName}`;
+      
+      if (kotaName === regionName || kabName === regionName) return true;
+      
+      // Try matching with prefix removed from regionName
+      const cleanRegionName = regionName.replace(/^(Kota|Kabupaten)\s+/i, '');
+      if (geoName === cleanRegionName) return true;
+      
+      return false;
+    }) || null;
+    setSelectedRegion(feature);
+
+    onRegionSelect?.(regionName);
+    onPredictionSelect?.(regionName);
   };
 
   const renderMapContent = () => {
@@ -79,9 +106,9 @@ export default function MapCard({ geojsonData, isLoading, error, onRetry, onRegi
         <Suspense fallback={<MapLoadingState />}>
           <MapClient 
             data={geojsonData} 
-            onRegionSelect={handleRegionSelect} 
+            onRegionSelect={handleRegionSelect}
             activeLayer={activeLayer} 
-            selectedRegion={selectedRegion}
+            selectedRegion={selectedRegion?.properties?.NAMOBJ || selectedRegion?.properties?.WADMKK || selectedRegion?.properties?.nama_kab}
           />
         </Suspense>
       );
@@ -152,7 +179,7 @@ export default function MapCard({ geojsonData, isLoading, error, onRetry, onRegi
                       disabled={wilayahLoading || !selectedProvince}
                     >
                       {selectedRegion
-                        ? filteredRegions.find((r) => r.toLowerCase() === selectedRegion.toLowerCase())
+                        ? selectedRegion.properties?.nama_kab
                         : "Cari Kabupaten/Kota..."}
                       <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                     </Button>
@@ -167,7 +194,16 @@ export default function MapCard({ geojsonData, isLoading, error, onRetry, onRegi
                             key={`${selectedProvince}-${region}-${index}`}
                             value={region}
                             onSelect={(currentValue) => {
-                              setSelectedRegion(currentValue === selectedRegion ? "" : currentValue);
+                              const regionName = currentValue.toLowerCase();
+                              const currentRegionName = selectedRegion?.properties?.nama_kab?.toLowerCase();
+
+                              if (regionName === currentRegionName) {
+                                handleRegionSelect(null);
+                              } else {
+                                // Find the exact region name from filteredRegions
+                                const exactRegionName = filteredRegions.find(r => r.toLowerCase() === regionName);
+                                handleRegionSelect(exactRegionName || null);
+                              }
                               setPopoverOpen(false);
                             }}
                           >

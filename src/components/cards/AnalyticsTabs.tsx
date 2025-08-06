@@ -1,5 +1,6 @@
 "use client"
 
+import React, { useEffect } from "react";
 import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -9,10 +10,13 @@ import { Badge } from "@/components/ui/badge";
 import { useChartData, useSpatialAnalysis } from "@/hooks/useResearchData";
 import CorrelationAnalysis from "./CorrelationAnalysis";
 
-
 // Import new refactored components
 import SummaryStats from "@/components/analytics/SummaryStats";
 import RecommendationsList from "@/components/analytics/RecommendationsList";
+
+// Import prediction components
+import { PredictionCard, EquationCard, InterpretationCard } from "@/components/prediction";
+import { usePrediction } from "@/hooks/usePrediction";
 
 interface AnalyticsTabsProps {
   selectedRegion: string | null;
@@ -22,6 +26,22 @@ export default function AnalyticsTabs({ selectedRegion }: AnalyticsTabsProps) {
   // Menggunakan data penelitian yang sebenarnya
   const { barChartData, pieChartData, lineChartData, summaryStats, loading, error } = useChartData();
   const { modelEffectiveness } = useSpatialAnalysis();
+  
+  // Menggunakan hook prediksi untuk fitur baru
+  const {
+    globalSummary,
+    isLoading: predictionLoading,
+    error: predictionError,
+    selectedRegionData,
+    selectRegion
+  } = usePrediction();
+  
+  // Update selected region di prediction hook ketika selectedRegion berubah
+  useEffect(() => {
+    if (selectedRegion) {
+      selectRegion(selectedRegion);
+    }
+  }, [selectedRegion, selectRegion]);
 
   // Menggunakan data yang tersedia dari hooks
   const barData = barChartData || [];
@@ -80,11 +100,13 @@ export default function AnalyticsTabs({ selectedRegion }: AnalyticsTabsProps) {
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="overview" className="w-full">
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-6">
               <TabsTrigger value="overview">Ringkasan</TabsTrigger>
               <TabsTrigger value="regions">Wilayah</TabsTrigger>
               <TabsTrigger value="trends">Tren</TabsTrigger>
               <TabsTrigger value="correlation">Korelasi</TabsTrigger>
+              <TabsTrigger value="prediction">Prediksi</TabsTrigger>
+              <TabsTrigger value="equation">Persamaan</TabsTrigger>
             </TabsList>
 
             <TabsContent value="overview" className="space-y-6">
@@ -307,9 +329,98 @@ export default function AnalyticsTabs({ selectedRegion }: AnalyticsTabsProps) {
                 </Card>
               </motion.div>
             </TabsContent>
+
+            {/* Tab Prediksi */}
+            <TabsContent value="prediction" className="space-y-4">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold">Prediksi Model GWNBR</h3>
+                  {predictionLoading ? (
+                    <div className="text-center py-8">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                      <p className="mt-2 text-sm text-gray-600">Memuat prediksi...</p>
+                    </div>
+                  ) : predictionError ? (
+                    <div className="text-center py-8 text-red-600">
+                      <p>Error: {predictionError}</p>
+                    </div>
+                  ) : selectedRegionData?.prediction ? (
+                    <PredictionCard prediction={selectedRegionData.prediction} />
+                  ) : (
+                    <div className="text-center py-8 text-gray-500">
+                      <p>Pilih wilayah pada peta untuk melihat prediksi</p>
+                    </div>
+                  )}
+                </div>
+                
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold">Interpretasi Hasil</h3>
+                  {selectedRegionData?.interpretation ? (
+                    <InterpretationCard 
+                      interpretation={selectedRegionData.interpretation} 
+                    />
+                  ) : (
+                    <div className="text-center py-8 text-gray-500">
+                      <p>Pilih wilayah untuk melihat interpretasi</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+              
+              {globalSummary && (
+                <div className="mt-6">
+                  <h3 className="text-lg font-semibold mb-4">Ringkasan Model Global</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="bg-blue-50 p-4 rounded-lg">
+                      <h4 className="font-medium text-blue-900">R² Global</h4>
+                      <p className="text-2xl font-bold text-blue-700">
+                        {globalSummary.globalMetrics.r2.toFixed(4)}
+                      </p>
+                    </div>
+                    <div className="bg-green-50 p-4 rounded-lg">
+                      <h4 className="font-medium text-green-900">RMSE Rata-rata</h4>
+                      <p className="text-2xl font-bold text-green-700">
+                        {globalSummary.globalMetrics.rmse.toFixed(4)}
+                      </p>
+                    </div>
+                    <div className="bg-purple-50 p-4 rounded-lg">
+                      <h4 className="font-medium text-purple-900">Akurasi Rata-rata</h4>
+                      <p className="text-2xl font-bold text-purple-700">
+                        {(globalSummary.averageAccuracy * 100).toFixed(2)}%
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </TabsContent>
+            
+            {/* Tab Persamaan */}
+            <TabsContent value="equation" className="space-y-4">
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold">Persamaan Model GWNBR</h3>
+                {predictionLoading ? (
+                  <div className="text-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                    <p className="mt-2 text-sm text-gray-600">Memuat persamaan...</p>
+                  </div>
+                ) : predictionError ? (
+                  <div className="text-center py-8 text-red-600">
+                    <p>Error: {predictionError}</p>
+                  </div>
+                ) : selectedRegionData?.equation ? (
+                  <EquationCard 
+                    equation={selectedRegionData.equation} 
+                  />
+                ) : (
+                  <div className="text-center py-8 text-gray-500">
+                    <p>Pilih wilayah pada peta untuk melihat persamaan model</p>
+                  </div>
+                )}
+              </div>
+            </TabsContent>
           </Tabs>
         </CardContent>
       </Card>
     </motion.div>
-  )
+  );
 }

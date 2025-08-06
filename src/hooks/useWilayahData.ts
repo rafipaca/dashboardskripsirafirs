@@ -23,8 +23,8 @@ export function useWilayahData(): WilayahDataHook {
             throw new Error('Data wilayah tidak dapat dimuat atau kosong.');
         }
         setRegionsByProvince(data);
-      } catch (err: any) {
-        setError(err.message || 'Gagal memuat data wilayah');
+      } catch (err: unknown) {
+        setError(err instanceof Error ? err.message : 'Gagal memuat data wilayah');
       } finally {
         setLoading(false);
       }

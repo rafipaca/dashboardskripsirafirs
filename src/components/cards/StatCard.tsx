@@ -122,7 +122,7 @@ interface RegionItemProps {
     sanitasi?: number;
   };
   showDetails: boolean;
-  getRiskBadgeVariant: (risk: string) => string;
+  getRiskBadgeVariant: (risk: string) => "default" | "secondary" | "destructive" | "outline";
   getRiskIcon: (risk: string) => React.ReactNode;
 }
 

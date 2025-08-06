@@ -1,6 +1,6 @@
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import { Button } from "@/components/ui/button";
-import { InfoIcon, LayersIcon } from "lucide-react";
+import { LayersIcon } from "lucide-react";
 import { motion } from "framer-motion";
 import { useMemo } from 'react';
 

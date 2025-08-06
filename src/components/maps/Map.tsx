@@ -28,12 +28,19 @@ const MapClient = dynamic(() => import('./MapClient'), {
 
 interface MapProps {
   data: FeatureCollection;
-  onRegionSelect?: (region: string) => void;
+  onRegionSelect?: (region: string | null) => void;
+  activeLayer: string;
+  selectedRegion?: string | null;
 }
 
-const Map = ({ data, onRegionSelect }: MapProps) => {
+const Map = ({ data, onRegionSelect, activeLayer, selectedRegion }: MapProps) => {
   // Client-side only rendering
-  return <MapClient data={data} onRegionSelect={onRegionSelect} />;
+  return <MapClient 
+    data={data} 
+    onRegionSelect={onRegionSelect} 
+    activeLayer={activeLayer} 
+    selectedRegion={selectedRegion} 
+  />;
 };
 
 export default Map;

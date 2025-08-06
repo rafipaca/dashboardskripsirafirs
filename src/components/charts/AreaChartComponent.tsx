@@ -3,12 +3,12 @@
 import { motion } from "framer-motion";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from "recharts";
-import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from "@/components/ui/chart";
+import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent, type ChartConfig } from "@/components/ui/chart";
 import { ActivityIcon } from "lucide-react";
 
 interface AreaChartComponentProps {
-  data: any[];
-  config: any;
+  data: Record<string, unknown>[];
+  config: ChartConfig;
   title?: string;
   description?: string;
 }
@@ -49,7 +49,7 @@ export default function AreaChartComponent({
                 />
                 <YAxis tick={{ fontSize: 12 }} />
                 <ChartTooltip content={<ChartTooltipContent />} />
-                <ChartLegend content={<ChartLegendContent />} />
+                <ChartLegend content={({ payload }) => <ChartLegendContent payload={payload} />} />
                 {Object.keys(config).map((key) => (
                   <Area
                     key={key}
@@ -59,7 +59,7 @@ export default function AreaChartComponent({
                     stroke={config[key]?.color}
                     fill={config[key]?.color}
                     fillOpacity={0.6}
-                    name={config[key]?.label}
+                    name={String(config[key]?.label)}
                   />
                 ))}
               </AreaChart>

@@ -9,7 +9,7 @@ import MapCard from "@/components/cards/MapCard/MapCard";
 import ResearchSummaryCards from "@/components/cards/ResearchSummaryCards";
 import AnalyticsTabs from "@/components/cards/AnalyticsTabs";
 import RegionalInsights from "@/components/cards/RegionalInsights";
-import { ANIMATION_CONSTANTS, DEFAULT_TIMEFRAME } from '@/lib/constants';
+import { ANIMATION_CONSTANTS } from '@/lib/constants';
 
 // Konstanta sudah dipindahkan ke file constants.ts
 
@@ -50,8 +50,12 @@ const AnimatedHeader = () => (
 export default function Home() {
   const { data: geojsonData, isLoading, error, refetch } = useGeojsonData();
   const [selectedRegion, setSelectedRegion] = useState<string | null>(null);
-  const [activeLayer, setActiveLayer] = useState<string>('signifikansi');
+  const [selectedPredictionRegion, setSelectedPredictionRegion] = useState<string | null>(null);
 
+  const handleRegionSelect = (regionName: string | null) => {
+    // MapCard sends the region name directly
+    setSelectedRegion(regionName);
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -86,33 +90,13 @@ export default function Home() {
             {/* Interactive Map Section */}
             <AnimatedSection delay={0.2}>
               <div className="p-6">
-                <div className="mb-4">
-                  <label htmlFor="layer-select" className="block text-sm font-medium text-foreground/80 mb-2">
-                    Pilih Tampilan Peta
-                  </label>
-                  <select
-                    id="layer-select"
-                    value={activeLayer}
-                    onChange={(e) => setActiveLayer(e.target.value)}
-                    className="block w-full max-w-xs p-2 border border-border/30 rounded-md bg-background focus:ring-primary focus:border-primary shadow-sm"
-                  >
-                    <option value="signifikansi">Peta Signifikansi Variabel</option>
-                    <option value="y_pneumonia">Jumlah Kasus Pneumonia (Y)</option>
-                    <option value="x1_gizi_kurang">Jumlah Balita Gizi Kurang (X1)</option>
-                    <option value="x2_imd">Cakupan IMD (X2)</option>
-                    <option value="x3_rokok">Konsumsi Rokok per Kapita (X3)</option>
-                    <option value="x4_kepadatan">Kepadatan Penduduk (X4)</option>
-                    <option value="x5_sanitasi">Akses Sanitasi Layak (X5)</option>
-                    <option value="x6_air_bersih">Akses Air Bersih (X6)</option>
-                  </select>
-                </div>
                 <MapCard 
-                  geojsonData={geojsonData}
+                  geojsonData={geojsonData as any}
                   isLoading={isLoading}
                   error={error}
                   onRetry={refetch}
-                  onRegionSelect={setSelectedRegion}
-                  activeLayer={activeLayer}
+                  onRegionSelect={handleRegionSelect}
+                  onPredictionSelect={setSelectedPredictionRegion}
                 />
               </div>
             </AnimatedSection>

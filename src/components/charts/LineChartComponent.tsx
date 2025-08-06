@@ -3,12 +3,12 @@
 import { motion } from "framer-motion";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from "recharts";
-import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from "@/components/ui/chart";
+import { type ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from "@/components/ui/chart";
 import { TrendingUpIcon } from "lucide-react";
 
 interface LineChartComponentProps {
-  data: any[];
-  config: any;
+  data: Record<string, unknown>[];
+  config: ChartConfig;
   title?: string;
   description?: string;
 }
@@ -48,8 +48,8 @@ export default function LineChartComponent({
                   height={80}
                 />
                 <YAxis tick={{ fontSize: 12 }} />
-                <ChartTooltip content={<ChartTooltipContent />} />
-                <ChartLegend content={<ChartLegendContent />} />
+                <ChartTooltip />
+                <ChartLegend />
                 {Object.keys(config).map((key) => (
                   <Line
                     key={key}
@@ -59,7 +59,7 @@ export default function LineChartComponent({
                     strokeWidth={2}
                     dot={{ r: 4 }}
                     activeDot={{ r: 6 }}
-                    name={config[key]?.label}
+                    name={typeof config[key]?.label === 'string' ? config[key].label as string : key}
                   />
                 ))}
               </LineChart>

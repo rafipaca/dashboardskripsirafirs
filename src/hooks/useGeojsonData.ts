@@ -42,8 +42,8 @@ export const useGeojsonData = ({
       }
 
       setData(result);
-    } catch (err: any) {
-      const errorMessage = err?.message || "Terjadi kesalahan yang tidak diketahui saat memuat data.";
+    } catch (err: unknown) {
+      const errorMessage = (err instanceof Error ? err.message : String(err)) || "Terjadi kesalahan yang tidak diketahui saat memuat data.";
       console.error("Gagal memuat GeoJSON:", errorMessage);
       setError(errorMessage);
     } finally {

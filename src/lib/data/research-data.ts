@@ -4,6 +4,7 @@
  */
 
 export interface ResearchDataPoint {
+  NAMOBJ: string;
   No: number;
   NAMOBJ: string;
   Penemuan: number;
@@ -70,7 +71,6 @@ export async function loadResearchData(): Promise<ResearchDataPoint[]> {
     const csvText = await response.text();
     
     const lines = csvText.split('\n');
-    const headers = lines[0].split(',');
     
     const data: ResearchDataPoint[] = [];
     

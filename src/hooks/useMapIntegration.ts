@@ -9,11 +9,16 @@ import { useMapData } from './useMapData';
 export function useMapIntegration() {
   const { rawData, loading: dataLoading, error: dataError } = useResearchData();
   const { data: geojsonData, isLoading: geojsonLoading, error: geojsonError } = useGeojsonData();
-  const { getRegionColor, getRegionData, generateTooltipContent } = useMapData();
+  const { 
+    getFeatureStyle,
+    generateTooltipContent,
+    generateModelEquation,
+    regionNames
+  } = useMapData();
 
   // Gabungkan status loading dan error
   const loading = dataLoading || geojsonLoading;
-  const error = dataError || geojsonError?.message || null;
+  const error = dataError || geojsonError || null;
 
   // Statistik untuk map
   const mapStats = useMemo(() => {
@@ -48,9 +53,10 @@ export function useMapIntegration() {
     error,
     
     // Map functions
-    getRegionColor,
-    getRegionData,
+    getFeatureStyle,
     generateTooltipContent,
+    generateModelEquation,
+    regionNames,
     
     // Computed values
     hasData: !loading && !error && rawData.length > 0 && geojsonData !== null

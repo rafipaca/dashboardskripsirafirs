@@ -2,25 +2,9 @@
 
 import { motion } from "framer-motion";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { ActivityIcon, TrendingUpIcon, MapPinIcon } from "lucide-react";
+import { ActivityIcon } from "lucide-react";
 
-interface SummaryStatItemProps {
-  value: string | number;
-  label: string;
-  color: string;
-  icon?: React.ReactNode;
-}
 
-const SummaryStatItem = ({ value, label, color, icon }: SummaryStatItemProps) => (
-  <div className="text-center">
-    <span className={`flex items-center justify-center space-x-1 text-2xl font-bold ${color}`}>
-      {icon}
-      {value}
-    </span>
-    <div className="text-xs text-muted-foreground">{label}</div>
-  </div>
-);
 
 interface SummaryStatsProps {
   effectivenessRate?: number;

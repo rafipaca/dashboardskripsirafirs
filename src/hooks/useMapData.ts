@@ -1,4 +1,5 @@
 import { useCallback, useMemo } from 'react';
+import { Feature } from 'geojson';
 import { useResearchData } from './useResearchData';
 import type { ResearchDataPoint, GWNBRCoefficient } from '@/lib/data/research-data';
 
@@ -20,14 +21,34 @@ export const useMapData = () => {
   const findRegionData = useCallback(
     (regionName: string): ResearchDataPoint | undefined => {
       if (!researchData || !regionName) return undefined;
+      
+      // First try exact match
+      let match = researchData.find((item) => item.NAMOBJ?.toLowerCase() === regionName.toLowerCase());
+      if (match) return match;
+      
       // Normalize both names for better matching
       const normalizedRegionName = regionName.replace(/^KABUPATEN\s/i, '').toLowerCase();
-      return researchData.find((item) => item.NAMOBJ?.toLowerCase().includes(normalizedRegionName));
+      match = researchData.find((item) => {
+        const itemName = item.NAMOBJ?.toLowerCase() || '';
+        const normalizedItemName = itemName.replace(/^kabupaten\s/i, '');
+        
+        // Try various matching strategies
+        return itemName.includes(normalizedRegionName) || 
+               normalizedItemName.includes(normalizedRegionName) ||
+               normalizedRegionName.includes(normalizedItemName) ||
+               itemName === normalizedRegionName;
+      });
+      
+      return match;
     },
     [researchData]
   );
 
-  const getSignificanceColor = (regionData: ResearchDataPoint): string => {
+  const getSignificanceColor = useCallback((feature: Feature): string => {
+    const regionName = feature?.properties?.NAMOBJ || feature?.properties?.WADMKK || "";
+    const regionData = findRegionData(regionName);
+    if (!regionData) return gray;
+    
     const significantVars = regionData.VariabelSignifikan;
     if (!significantVars) return gray;
     const codes = new Set(significantVars.replace(/"/g, '').split(',').map((code: string) => code.trim()));
@@ -42,9 +63,9 @@ export const useMapData = () => {
     if (has('X4') && codes.size === 1) return '#9333ea'; // Purple
     
     return gray;
-  };
+  }, [findRegionData]);
 
-  const variableThresholds: Record<string, { medium: number; high: number }> = {
+  const variableThresholds = useMemo(() => ({
     Penemuan: { medium: 2425, high: 6212 },
     GiziKurang: { medium: 2068, high: 4933 },
     IMD: { medium: 44.3, high: 81.6 },
@@ -52,19 +73,19 @@ export const useMapData = () => {
     Kepadatan: { medium: 4619, high: 12332 },
     AirMinumLayak: { medium: 87.560, high: 95.940 },
     Sanitasi: { medium: 66.7, high: 86.36 },
-  };
+  }), []);
 
-  const getChoroplethColor = (value: number, layer: string): string => {
-    const thresholds = variableThresholds[layer];
+  const getChoroplethColor = useCallback((value: number, layer: string): string => {
+    const thresholds = variableThresholds[layer as keyof typeof variableThresholds];
     if (!thresholds || isNaN(value) || value === null) return gray;
 
     if (value <= thresholds.medium) return '#fef08a'; // Low
     if (value <= thresholds.high) return '#f97316'; // Medium
     return '#b91c1c'; // High
-  };
+  }, [variableThresholds]);
 
   const getFeatureStyle = useCallback(
-    (feature: any, activeLayer: string) => {
+    (feature: Feature, activeLayer: string) => {
       const regionName = feature?.properties?.NAMOBJ || feature?.properties?.WADMKK || "";
       const regionData = findRegionData(regionName);
 
@@ -72,7 +93,7 @@ export const useMapData = () => {
 
       if (regionData && researchData) {
         if (activeLayer === 'significance') {
-          fillColor = getSignificanceColor(regionData);
+          fillColor = getSignificanceColor(feature);
         } else {
           const value = parseFloat(regionData[activeLayer as keyof ResearchDataPoint] as string);
           fillColor = getChoroplethColor(value, activeLayer);
@@ -86,11 +107,11 @@ export const useMapData = () => {
         fillOpacity: 0.75,
       };
     },
-    [researchData, findRegionData]
+    [researchData, findRegionData, getSignificanceColor, getChoroplethColor]
   );
 
   const generateTooltipContent = useCallback(
-    (feature: any): string => {
+    (feature: Feature): string => {
       const regionName = feature?.properties?.NAMOBJ || feature?.properties?.WADMKK || "Unknown Region";
       const regionData = findRegionData(regionName);
 
@@ -99,7 +120,7 @@ export const useMapData = () => {
       if (!regionData) return `${regionName}<br>Data tidak ditemukan.`;
 
       const regionNameFromFeature = regionData.NAMOBJ || 'N/A';
-      const formatValue = (value: any) => (value !== undefined && value !== null) ? value.toLocaleString() : 'N/A';
+      const formatValue = (value: unknown) => (value !== undefined && value !== null && typeof value === 'number') ? value.toLocaleString() : 'N/A';
 
       return `
         <div style="font-family: Arial, sans-serif; font-size: 14px; min-width: 250px;">
@@ -118,7 +139,7 @@ export const useMapData = () => {
         </div>
       `;
     },
-    [findRegionData]
+    [findRegionData, loading, error]
   );
 
   const generateModelEquation = useCallback(
