@@ -26,6 +26,10 @@ import {
   generateFullInterpretation,
   getVariableName
 } from '@/lib/interpretation/utils';
+import {
+  getSignificantFactorTemplate,
+  getNonSignificantFactorTemplate
+} from '@/lib/interpretation/templates';
 
 
 interface InterpretationCardProps {
@@ -157,49 +161,46 @@ export function InterpretationCard({ equation, className }: InterpretationCardPr
           <TabsContent value="factors" className="space-y-4">
             {/* Significant Factors */}
             {significantFactors.length > 0 && (
-              <div className="space-y-3">
+              <div className="space-y-4">
                 <h3 className="font-semibold text-lg mb-3">Faktor Berpengaruh Signifikan</h3>
-                {significantFactors.map((factor, index) => (
-                  <div 
-                    key={index}
-                    className={cn(
-                      'p-4 rounded-lg border-l-4',
-                      factor.effect === 'increase' 
-                        ? 'bg-red-50 border-red-400' 
-                        : 'bg-green-50 border-green-400'
-                    )}
-                  >
-                    <div className="flex items-start justify-between mb-2">
-                      <div className="flex items-center space-x-2">
-                        {getEffectIcon(factor.effect)}
-                        <span className="font-semibold">{getVariableName(factor.variable)}</span>
-                        <Badge variant="secondary">
-                          {factor.effect === 'increase' ? 'MENINGKATKAN' : 'MENURUNKAN'}
-                        </Badge>
+                {significantFactors.map((factor, index) => {
+                  const template = getSignificantFactorTemplate(factor, regionName);
+                  return (
+                    <div 
+                      key={index}
+                      className={cn(
+                        'p-4 rounded-lg border-l-4',
+                        factor.effect === 'increase' 
+                          ? 'bg-red-50 border-red-400' 
+                          : 'bg-green-50 border-green-400'
+                      )}
+                    >
+                      <div className="prose prose-sm max-w-none">
+                        <div dangerouslySetInnerHTML={{ __html: template.replace(/\n/g, '<br/>').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }} />
                       </div>
                     </div>
-                    <p className="text-sm text-gray-700">{factor.description}</p>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
             
             {/* Non-Significant Factors */}
             {nonSignificantFactors.length > 0 && (
-              <div className="space-y-3">
+              <div className="space-y-4">
                 <h3 className="font-semibold text-lg mb-3">Faktor Tidak Berpengaruh Signifikan</h3>
-                {nonSignificantFactors.map((factor, index) => (
-                  <div 
-                    key={index}
-                    className="p-4 rounded-lg border-l-4 bg-gray-50 border-gray-400"
-                  >
-                    <div className="flex items-start justify-between mb-2">
-                      <span className="font-semibold">{getVariableName(factor.variable)}</span>
-                      <Badge variant="outline">TIDAK SIGNIFIKAN</Badge>
+                {nonSignificantFactors.map((factor, index) => {
+                  const template = getNonSignificantFactorTemplate(factor, regionName);
+                  return (
+                    <div 
+                      key={index}
+                      className="p-4 rounded-lg border-l-4 bg-gray-50 border-gray-400"
+                    >
+                      <div className="prose prose-sm max-w-none">
+                        <div dangerouslySetInnerHTML={{ __html: template.replace(/\n/g, '<br/>').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }} />
+                      </div>
                     </div>
-                    <p className="text-sm text-gray-700">{factor.description}</p>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
             

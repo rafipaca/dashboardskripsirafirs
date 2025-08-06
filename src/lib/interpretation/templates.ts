@@ -22,7 +22,7 @@ export interface SimpleInterpretation {
 /**
  * Template untuk faktor yang berpengaruh signifikan
  */
-export function getSignificantFactorTemplate(factor: FactorInterpretation): string {
+export function getSignificantFactorTemplate(factor: FactorInterpretation, regionName: string): string {
   const variableNames: Record<string, string> = {
     'giziKurang': 'Gizi Kurang',
     'imd': 'Inisiasi Menyusu Dini (IMD)',
@@ -33,40 +33,52 @@ export function getSignificantFactorTemplate(factor: FactorInterpretation): stri
   };
 
   const varName = variableNames[factor.variable] || factor.variable;
-  const effectText = factor.effect === 'increase' ? 'meningkatkan' : 'menurunkan';
-
-
+  const arahPengaruh = factor.effect === 'increase' ? 'Positif' : 'Negatif';
+  const tinggiRendah = factor.effect === 'increase' ? 'tinggi' : 'rendah';
+  const lebihTinggiRendah = factor.effect === 'increase' ? 'lebih tinggi' : 'lebih rendah';
+  
+  // Hitung persentase perubahan dari koefisien (exp(β) - 1) * 100
+  const percentageChange = ((Math.exp(factor.coefficient) - 1) * 100).toFixed(1);
+  
+  let variableDescription = '';
+  let implikasiPrioritas = '';
+  
   if (factor.variable === 'giziKurang') {
-    return `Faktor **${varName}** berpengaruh signifikan terhadap kasus pneumonia di wilayah ini. Setiap peningkatan 1 kasus gizi kurang akan ${effectText} risiko pneumonia. Hal ini menunjukkan pentingnya program perbaikan gizi untuk mencegah pneumonia pada balita.`;
+    variableDescription = 'tingkat gizi kurang';
+    implikasiPrioritas = 'perbaikan status gizi';
+  } else if (factor.variable === 'imd') {
+    variableDescription = 'praktik IMD';
+    implikasiPrioritas = 'peningkatan praktik IMD';
+  } else if (factor.variable === 'rokokPerkapita') {
+    variableDescription = 'rata-rata konsumsi rokok per kapita';
+    implikasiPrioritas = 'pengurangan paparan asap rokok di tingkat rumah tangga';
+  } else if (factor.variable === 'kepadatan') {
+    variableDescription = 'kepadatan penduduk';
+    implikasiPrioritas = 'pengelolaan dampak kepadatan';
+  } else if (factor.variable === 'airMinum') {
+    variableDescription = 'akses air minum layak';
+    implikasiPrioritas = 'peningkatan akses air minum layak';
+  } else if (factor.variable === 'sanitasi') {
+    variableDescription = 'akses sanitasi layak';
+    implikasiPrioritas = 'peningkatan akses sanitasi';
+  } else {
+    variableDescription = factor.variable;
+    implikasiPrioritas = `perbaikan ${factor.variable}`;
   }
 
-  if (factor.variable === 'imd') {
-    return `Faktor **${varName}** berpengaruh signifikan terhadap kasus pneumonia. Peningkatan praktik IMD akan ${effectText} risiko pneumonia pada balita. IMD membantu meningkatkan kekebalan tubuh bayi sehingga lebih tahan terhadap infeksi.`;
-  }
+  return `**${varName} - (Pengaruh Signifikan)**
 
-  if (factor.variable === 'rokokPerkapita') {
-    return `Faktor **${varName}** berpengaruh signifikan terhadap kasus pneumonia. Peningkatan konsumsi rokok di wilayah ini akan ${effectText} risiko pneumonia pada balita. Asap rokok dapat merusak sistem pernapasan dan menurunkan daya tahan tubuh anak.`;
-  }
+• **Arah Pengaruh:** ${arahPengaruh}
 
-  if (factor.variable === 'kepadatan') {
-    return `Faktor **${varName}** berpengaruh signifikan terhadap kasus pneumonia. Kepadatan penduduk yang tinggi akan ${effectText} risiko penularan pneumonia karena kontak antar individu yang lebih sering.`;
-  }
+• **Interpretasi:** Di ${regionName}, variabel ini menunjukkan asosiasi yang signifikan secara statistik dengan jumlah kasus pneumonia. Berdasarkan koefisien model lokal (β = ${factor.coefficient.toFixed(4)}), dapat diinterpretasikan bahwa, dengan asumsi faktor-faktor lain konstan (ceteris paribus), wilayah dengan ${variableDescription} yang ${lebihTinggiRendah} diperkirakan memiliki rata-rata jumlah kasus pneumonia sekitar ${percentageChange}% ${lebihTinggiRendah}.
 
-  if (factor.variable === 'airMinum') {
-    return `Faktor **${varName}** berpengaruh signifikan terhadap kasus pneumonia. Akses yang baik terhadap air minum layak akan ${effectText} risiko pneumonia karena mendukung kebersihan dan kesehatan keluarga.`;
-  }
-
-  if (factor.variable === 'sanitasi') {
-    return `Faktor **${varName}** berpengaruh signifikan terhadap kasus pneumonia. Akses sanitasi yang baik akan ${effectText} risiko pneumonia dengan mencegah penyebaran bakteri dan virus penyebab infeksi.`;
-  }
-
-  return `Faktor **${varName}** berpengaruh signifikan dan akan ${effectText} risiko pneumonia di wilayah ini.`;
+• **Implikasi Prioritas:** Temuan ini mengindikasikan bahwa ${implikasiPrioritas} merupakan area intervensi prioritas untuk dipertimbangkan di wilayah ini.`;
 }
 
 /**
  * Template untuk faktor yang tidak berpengaruh signifikan
  */
-export function getNonSignificantFactorTemplate(factor: FactorInterpretation): string {
+export function getNonSignificantFactorTemplate(factor: FactorInterpretation, regionName: string): string {
   const variableNames: Record<string, string> = {
     'giziKurang': 'Gizi Kurang',
     'imd': 'Inisiasi Menyusu Dini (IMD)',
@@ -77,62 +89,41 @@ export function getNonSignificantFactorTemplate(factor: FactorInterpretation): s
   };
 
   const varName = variableNames[factor.variable] || factor.variable;
-
+  
+  let topikVariabel = '';
+  
   if (factor.variable === 'giziKurang') {
-    return `Faktor **${varName}** tidak menunjukkan pengaruh yang signifikan terhadap kasus pneumonia di wilayah ini. Meskipun demikian, perbaikan status gizi tetap penting untuk kesehatan balita secara keseluruhan.`;
+    topikVariabel = 'status gizi';
+  } else if (factor.variable === 'imd') {
+    topikVariabel = 'praktik IMD';
+  } else if (factor.variable === 'rokokPerkapita') {
+    topikVariabel = 'pengurangan paparan rokok';
+  } else if (factor.variable === 'kepadatan') {
+    topikVariabel = 'pengelolaan kepadatan penduduk';
+  } else if (factor.variable === 'airMinum') {
+    topikVariabel = 'akses sanitasi';
+  } else if (factor.variable === 'sanitasi') {
+    topikVariabel = 'akses sanitasi';
+  } else {
+    topikVariabel = factor.variable;
   }
 
-  if (factor.variable === 'imd') {
-    return `Faktor **${varName}** tidak menunjukkan pengaruh yang signifikan terhadap kasus pneumonia di wilayah ini. Namun, praktik IMD tetap direkomendasikan untuk manfaat kesehatan lainnya.`;
-  }
+  return `**${varName} - (Pengaruh Tidak Signifikan)**
 
-  if (factor.variable === 'rokokPerkapita') {
-    return `Faktor **${varName}** tidak menunjukkan pengaruh yang signifikan terhadap kasus pneumonia di wilayah ini. Meski begitu, pengurangan konsumsi rokok tetap penting untuk kesehatan masyarakat.`;
-  }
+• **Interpretasi:** Di ${regionName}, variabel ini tidak menunjukkan pengaruh yang signifikan secara statistik terhadap jumlah kasus pneumonia dalam model ini.
 
-  if (factor.variable === 'kepadatan') {
-    return `Faktor **${varName}** tidak menunjukkan pengaruh yang signifikan terhadap kasus pneumonia di wilayah ini. Kondisi kepadatan penduduk mungkin sudah dalam batas yang dapat dikelola dengan baik.`;
-  }
-
-  if (factor.variable === 'airMinum') {
-    return `Faktor **${varName}** tidak menunjukkan pengaruh yang signifikan terhadap kasus pneumonia di wilayah ini. Hal ini mungkin menunjukkan bahwa akses air minum sudah cukup baik di wilayah ini.`;
-  }
-
-  if (factor.variable === 'sanitasi') {
-    return `Faktor **${varName}** tidak menunjukkan pengaruh yang signifikan terhadap kasus pneumonia di wilayah ini. Kondisi sanitasi di wilayah ini mungkin sudah memadai.`;
-  }
-
-  return `Faktor **${varName}** tidak menunjukkan pengaruh yang signifikan terhadap kasus pneumonia di wilayah ini.`;
+• **Penjelasan Kontekstual:** Meskipun secara teoretis ${topikVariabel} tetap penting untuk kesehatan anak, ketidaksignifikanannya di sini kemungkinan besar mengindikasikan dua hal: (1) dampaknya 'tertelan' atau didominasi oleh pengaruh yang lebih kuat dari faktor-faktor risiko lain yang signifikan di wilayah ini, atau (2) variabel ini tidak cukup bervariasi di wilayah ini untuk menunjukkan hubungan yang jelas.`;
 }
 
 /**
  * Membuat ringkasan interpretasi
  */
 export function generateSummary(interpretation: SimpleInterpretation): string {
-  const { regionName, significantFactors, dominantFactor } = interpretation;
-  const sigCount = significantFactors.length;
+  const { regionName, significantFactors } = interpretation;
   
-  if (sigCount === 0) {
-    return `Berdasarkan analisis model GWNBR untuk wilayah ${regionName}, tidak ada faktor yang menunjukkan pengaruh signifikan terhadap kasus pneumonia. Hal ini menunjukkan bahwa faktor-faktor lain di luar model mungkin lebih berperan dalam menentukan kasus pneumonia di wilayah ini.`;
-  }
+  return `**Ringkasan Diagnosis Spasial:**
 
-  let summary = `Berdasarkan analisis model GWNBR untuk wilayah ${regionName}, terdapat ${sigCount} faktor yang berpengaruh signifikan terhadap kasus pneumonia.`;
-  
-  if (dominantFactor) {
-    const varNames: Record<string, string> = {
-      'giziKurang': 'Gizi Kurang',
-      'imd': 'Inisiasi Menyusu Dini (IMD)',
-      'rokokPerkapita': 'Konsumsi Rokok Per Kapita',
-      'kepadatan': 'Kepadatan Penduduk',
-      'airMinum': 'Akses Air Minum Layak',
-      'sanitasi': 'Akses Sanitasi Layak'
-    };
-    
-    const dominantName = varNames[dominantFactor.variable] || dominantFactor.variable;
-    summary += ` Faktor yang paling dominan adalah ${dominantName}.`;
-  }
-
-  return summary;
+Berdasarkan analisis Geographically Weighted Negative Binomial Regression (GWNBR), model ini mengidentifikasi faktor-faktor berikut memiliki asosiasi statistik yang paling kuat dengan jumlah kasus pneumonia di wilayah ini.`;
 }
 
 /**

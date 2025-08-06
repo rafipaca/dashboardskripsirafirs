@@ -332,66 +332,27 @@ export default function AnalyticsTabs({ selectedRegion }: AnalyticsTabsProps) {
 
             {/* Tab Prediksi */}
             <TabsContent value="prediction" className="space-y-4">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold">Prediksi Model GWNBR</h3>
-                  {predictionLoading ? (
-                    <div className="text-center py-8">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-                      <p className="mt-2 text-sm text-gray-600">Memuat prediksi...</p>
-                    </div>
-                  ) : predictionError ? (
-                    <div className="text-center py-8 text-red-600">
-                      <p>Error: {predictionError}</p>
-                    </div>
-                  ) : selectedRegionData?.prediction ? (
-                    <PredictionCard prediction={selectedRegionData.prediction} />
-                  ) : (
-                    <div className="text-center py-8 text-gray-500">
-                      <p>Pilih wilayah pada peta untuk melihat prediksi</p>
-                    </div>
-                  )}
-                </div>
-                
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold">Interpretasi Hasil</h3>
-                  {selectedRegionData?.equation ? (
-                    <InterpretationCard 
-                      equation={selectedRegionData.equation} 
-                    />
-                  ) : (
-                    <div className="text-center py-8 text-gray-500">
-                      <p>Pilih wilayah untuk melihat interpretasi</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-              
-              {globalSummary && (
-                <div className="mt-6">
-                  <h3 className="text-lg font-semibold mb-4">Ringkasan Model Global</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="bg-blue-50 p-4 rounded-lg">
-                      <h4 className="font-medium text-blue-900">R² Global</h4>
-                      <p className="text-2xl font-bold text-blue-700">
-                        {globalSummary.globalMetrics.r2.toFixed(4)}
-                      </p>
-                    </div>
-                    <div className="bg-green-50 p-4 rounded-lg">
-                      <h4 className="font-medium text-green-900">RMSE Rata-rata</h4>
-                      <p className="text-2xl font-bold text-green-700">
-                        {globalSummary.globalMetrics.rmse.toFixed(4)}
-                      </p>
-                    </div>
-                    <div className="bg-purple-50 p-4 rounded-lg">
-                      <h4 className="font-medium text-purple-900">Akurasi Rata-rata</h4>
-                      <p className="text-2xl font-bold text-purple-700">
-                        {(globalSummary.averageAccuracy * 100).toFixed(2)}%
-                      </p>
-                    </div>
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold">Interpretasi Hasil</h3>
+                {predictionLoading ? (
+                  <div className="text-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                    <p className="mt-2 text-sm text-gray-600">Memuat interpretasi...</p>
                   </div>
-                </div>
-              )}
+                ) : predictionError ? (
+                  <div className="text-center py-8 text-red-600">
+                    <p>Error: {predictionError}</p>
+                  </div>
+                ) : selectedRegionData?.equation ? (
+                  <InterpretationCard 
+                    equation={selectedRegionData.equation} 
+                  />
+                ) : (
+                  <div className="text-center py-8 text-gray-500">
+                    <p>Pilih wilayah untuk melihat interpretasi</p>
+                  </div>
+                )}
+              </div>
             </TabsContent>
             
             {/* Tab Persamaan */}

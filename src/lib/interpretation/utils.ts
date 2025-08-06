@@ -71,7 +71,7 @@ export function generateFullInterpretation(interpretation: SimpleInterpretation)
     result += `## Faktor yang Berpengaruh Signifikan\n\n`;
     significantFactors.forEach((factor, index) => {
       result += `### ${index + 1}. ${getVariableName(factor.variable)}\n`;
-      result += `${getSignificantFactorTemplate(factor)}\n\n`;
+      result += `${getSignificantFactorTemplate(factor, regionName)}\n\n`;
     });
   }
   
@@ -80,7 +80,7 @@ export function generateFullInterpretation(interpretation: SimpleInterpretation)
     result += `## Faktor yang Tidak Berpengaruh Signifikan\n\n`;
     nonSignificantFactors.forEach((factor, index) => {
       result += `### ${index + 1}. ${getVariableName(factor.variable)}\n`;
-      result += `${getNonSignificantFactorTemplate(factor)}\n\n`;
+      result += `${getNonSignificantFactorTemplate(factor, regionName)}\n\n`;
     });
   }
   
