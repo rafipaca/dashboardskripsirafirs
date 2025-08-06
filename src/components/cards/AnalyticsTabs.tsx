@@ -355,9 +355,9 @@ export default function AnalyticsTabs({ selectedRegion }: AnalyticsTabsProps) {
                 
                 <div className="space-y-4">
                   <h3 className="text-lg font-semibold">Interpretasi Hasil</h3>
-                  {selectedRegionData?.interpretation ? (
+                  {selectedRegionData?.equation ? (
                     <InterpretationCard 
-                      interpretation={selectedRegionData.interpretation} 
+                      equation={selectedRegionData.equation} 
                     />
                   ) : (
                     <div className="text-center py-8 text-gray-500">

@@ -73,7 +73,7 @@ export const useUIStore = create<UIStore>()(
         },
 
         closeAllModals: () => {
-          set((state) => ({ modals: { ...initialState.modals } }), false, 'closeAllModals');
+          set(() => ({ modals: { ...initialState.modals } }), false, 'closeAllModals');
         },
 
         reset: () => {

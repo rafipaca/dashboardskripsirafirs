@@ -64,7 +64,7 @@ export default function MapCard({ geojsonData, isLoading, error, onRetry, onRegi
       const defaultProvince = availableProvinces.find(p => p.toUpperCase() === 'JAWA TIMUR') || availableProvinces[0];
       setSelectedProvince(defaultProvince);
     }
-  }, [availableProvinces]);
+  }, [availableProvinces, selectedProvince]);
 
   const handleRegionSelect = (regionName: string | null) => {
     setSelectedRegionName(regionName || '');

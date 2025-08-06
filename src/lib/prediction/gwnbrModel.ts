@@ -84,13 +84,25 @@ export function calculateModelMetrics(
 ): ModelMetrics {
   const n = actual.length;
   
-  // R-squared
-  const actualMean = actual.reduce((sum, val) => sum + val, 0) / n;
-  const totalSumSquares = actual.reduce((sum, val) => sum + Math.pow(val - actualMean, 2), 0);
-  const residualSumSquares = actual.reduce((sum, val, i) => sum + Math.pow(val - predicted[i], 2), 0);
-  const r2 = 1 - (residualSumSquares / totalSumSquares);
+  if (n === 0) {
+    return { r2: 0, rmse: 0, mae: 0, mape: 0, aic: 0, bic: 0 };
+  }
+  
+  // Untuk single data point, R² tidak dapat dihitung secara bermakna
+  let r2 = 0;
+  if (n > 1) {
+    const actualMean = actual.reduce((sum, val) => sum + val, 0) / n;
+    const totalSumSquares = actual.reduce((sum, val) => sum + Math.pow(val - actualMean, 2), 0);
+    const residualSumSquares = actual.reduce((sum, val, i) => sum + Math.pow(val - predicted[i], 2), 0);
+    
+    // Hindari pembagian dengan nol
+    if (totalSumSquares > 0) {
+      r2 = 1 - (residualSumSquares / totalSumSquares);
+    }
+  }
   
   // RMSE
+  const residualSumSquares = actual.reduce((sum, val, i) => sum + Math.pow(val - predicted[i], 2), 0);
   const rmse = Math.sqrt(residualSumSquares / n);
   
   // MAE
@@ -103,10 +115,29 @@ export function calculateModelMetrics(
   }, 0) / n * 100;
   
   // Simplified AIC and BIC (would need more parameters in real implementation)
-  const aic = n * Math.log(residualSumSquares / n) + 2 * 7; // 7 parameters
-  const bic = n * Math.log(residualSumSquares / n) + Math.log(n) * 7;
+  let aic = 0, bic = 0;
+  if (residualSumSquares > 0 && n > 0) {
+    aic = n * Math.log(residualSumSquares / n) + 2 * 7; // 7 parameters
+    bic = n * Math.log(residualSumSquares / n) + Math.log(n) * 7;
+  }
   
   return { r2, rmse, mae, mape, aic, bic };
+}
+
+/**
+ * Menghitung global model metrics dari semua prediksi
+ */
+export function calculateGlobalModelMetrics(
+  predictions: Array<{ actualValue: number; predictedValue: number }>
+): ModelMetrics {
+  if (predictions.length === 0) {
+    return { r2: 0, rmse: 0, mae: 0, mape: 0, aic: 0, bic: 0 };
+  }
+  
+  const actual = predictions.map(p => p.actualValue);
+  const predicted = predictions.map(p => p.predictedValue);
+  
+  return calculateModelMetrics(actual, predicted);
 }
 
 /**

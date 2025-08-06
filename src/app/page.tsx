@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { type FeatureCollection } from "geojson";
 import { motion } from "framer-motion";
 
 import { DashboardHeader } from "@/components/layout/DashboardHeader";
@@ -50,7 +51,7 @@ const AnimatedHeader = () => (
 export default function Home() {
   const { data: geojsonData, isLoading, error, refetch } = useGeojsonData();
   const [selectedRegion, setSelectedRegion] = useState<string | null>(null);
-  const [selectedPredictionRegion, setSelectedPredictionRegion] = useState<string | null>(null);
+  
 
   const handleRegionSelect = (regionName: string | null) => {
     // MapCard sends the region name directly
@@ -91,12 +92,11 @@ export default function Home() {
             <AnimatedSection delay={0.2}>
               <div className="p-6">
                 <MapCard 
-                  geojsonData={geojsonData as any}
+                  geojsonData={geojsonData as FeatureCollection}
                   isLoading={isLoading}
                   error={error}
                   onRetry={refetch}
                   onRegionSelect={handleRegionSelect}
-                  onPredictionSelect={setSelectedPredictionRegion}
                 />
               </div>
             </AnimatedSection>

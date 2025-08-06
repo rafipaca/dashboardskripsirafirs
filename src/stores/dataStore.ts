@@ -80,7 +80,7 @@ export const useDataStore = create<DataStore>()(
         }),
         // Only persist data for 1 hour
         version: 1,
-        migrate: (persistedState: any, version: number) => {
+        migrate: (persistedState: Partial<DataStore>, version: number) => {
           if (version === 0) {
             // Migration logic if needed
             return persistedState;

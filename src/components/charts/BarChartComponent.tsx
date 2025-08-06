@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, type LegendProps } from 'recharts';
 import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from "@/components/ui/chart";
 import { BarChartIcon } from "lucide-react";
 
@@ -49,7 +49,7 @@ export default function BarChartComponent({
                 />
                 <YAxis tick={{ fontSize: 12 }} />
                 <ChartTooltip content={<ChartTooltipContent />} />
-                <ChartLegend content={(props: any) => <ChartLegendContent {...props} />} />
+                <ChartLegend content={(props: LegendProps) => <ChartLegendContent {...props} />} />
                 <Bar 
                   dataKey="value" 
                   fill="var(--color-value)" 

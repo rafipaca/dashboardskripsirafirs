@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { devtools, persist } from 'zustand/middleware';
 import { DashboardStore } from './types';
-import { DashboardFilters, DashboardMetrics } from '@/types/dashboard';
+import { DashboardFilters } from '@/types/dashboard';
 
 const initialState = {
   selectedRegion: null,
@@ -19,7 +19,7 @@ const initialState = {
 export const useDashboardStore = create<DashboardStore>()(
   devtools(
     persist(
-      (set, get) => ({
+      (set) => ({
         ...initialState,
 
         // Actions

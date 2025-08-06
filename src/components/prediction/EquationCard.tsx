@@ -101,7 +101,7 @@ export function EquationCard({ equation, className }: EquationCardProps) {
               onClick={() => setShowZValues(!showZValues)}
             >
               {showZValues ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              {showZValues ? 'Sembunyikan Z' : 'Tampilkan Z'}
+              {showZValues ? 'Sembunyikan Status' : 'Tampilkan Status'}
             </Button>
           </div>
         </div>
@@ -148,13 +148,13 @@ export function EquationCard({ equation, className }: EquationCardProps) {
                 
                 {showZValues && (
                   <div className="mt-3 pt-3 border-t border-gray-200">
-                    <div className="text-xs text-gray-600 mb-2">Nilai Z-statistik:</div>
-                    <div className="text-xs font-mono">
+                    <div className="text-xs text-gray-600 mb-2">Status Signifikansi Variabel:</div>
+                    <div className="text-xs">
                       {Object.entries(coefficients).map(([key, coef]) => (
                         <div key={key} className="flex justify-between items-center py-1">
                           <span>{variableLabels[key] || key}:</span>
                           <span className={coef.significant ? 'text-green-600 font-semibold' : 'text-gray-500'}>
-                            Z = {coef.zValue.toFixed(3)}
+                            {coef.significant ? 'Berpengaruh Signifikan' : 'Tidak Berpengaruh Signifikan'}
                             {coef.significant && <CheckCircle className="inline h-3 w-3 ml-1" />}
                             {!coef.significant && <XCircle className="inline h-3 w-3 ml-1" />}
                           </span>
@@ -166,17 +166,17 @@ export function EquationCard({ equation, className }: EquationCardProps) {
               </div>
             </div>
             
-            {/* Theta Parameter */}
+            {/* Model Information */}
             <div className="bg-blue-50 p-3 rounded-lg">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
                   <Info className="h-4 w-4 text-blue-600" />
-                  <span className="text-sm font-medium text-blue-800">Parameter Dispersi</span>
+                  <span className="text-sm font-medium text-blue-800">Model GWNBR</span>
                 </div>
-                <span className="font-mono text-blue-700">θ = {theta.toFixed(4)}</span>
+                <span className="text-sm text-blue-700">{significantCount} dari 7 variabel signifikan</span>
               </div>
               <p className="text-xs text-blue-600 mt-1">
-                Theta mengontrol overdispersi dalam model Negative Binomial
+                Geographically Weighted Negative Binomial Regression untuk prediksi kasus pneumonia
               </p>
             </div>
             
@@ -214,8 +214,7 @@ export function EquationCard({ equation, className }: EquationCardProps) {
                         {variableLabels[key] || key}
                       </div>
                       <div className="text-xs text-gray-500">
-                        Z = {coef.zValue.toFixed(3)} 
-                        {coef.significant ? ' (Signifikan)' : ' (Tidak Signifikan)'}
+                        {coef.significant ? 'Berpengaruh Signifikan' : 'Tidak Berpengaruh Signifikan'}
                       </div>
                     </div>
                   </div>
@@ -244,8 +243,7 @@ export function EquationCard({ equation, className }: EquationCardProps) {
                     <tr className="border-b">
                       <th className="text-left py-2">Variabel</th>
                       <th className="text-right py-2">Koefisien</th>
-                      <th className="text-right py-2">Z-value</th>
-                      <th className="text-center py-2">Signifikan</th>
+                      <th className="text-center py-2">Status</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -258,7 +256,6 @@ export function EquationCard({ equation, className }: EquationCardProps) {
                         )}>
                           {coef.value.toFixed(4)}
                         </td>
-                        <td className="text-right py-2">{coef.zValue.toFixed(3)}</td>
                         <td className="text-center py-2">
                           {coef.significant ? (
                             <CheckCircle className="h-3 w-3 text-green-600 mx-auto" />
@@ -268,12 +265,6 @@ export function EquationCard({ equation, className }: EquationCardProps) {
                         </td>
                       </tr>
                     ))}
-                    <tr className="border-t-2 border-gray-400">
-                      <td className="py-2 font-semibold">Theta (θ)</td>
-                      <td className="text-right py-2 font-semibold">{theta.toFixed(4)}</td>
-                      <td className="text-right py-2">-</td>
-                      <td className="text-center py-2">-</td>
-                    </tr>
                   </tbody>
                 </table>
               </div>

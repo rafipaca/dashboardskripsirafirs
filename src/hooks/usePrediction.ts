@@ -11,13 +11,15 @@ import {
   RegionInterpretation,
   GlobalModelSummary,
   PredictionFilters,
-  ChartDataPoint
+  ChartDataPoint,
+  ModelMetrics
 } from '@/types/prediction';
 import { 
   calculateGWNBRPrediction,
   calculateConfidenceInterval,
   calculateStandardError,
   calculateModelMetrics,
+  calculateGlobalModelMetrics,
   generateEquationDisplay,
   generateRegionInterpretation
 } from '@/lib/prediction/gwnbrModel';
@@ -60,47 +62,45 @@ const defaultFilters: PredictionFilters = {
 };
 
 // Sample data untuk variabel independen (dalam implementasi nyata, ini akan diambil dari data CSV)
-const getSampleVariables = (regionName: string) => {
-  // Ini adalah data contoh, dalam implementasi nyata harus diambil dari data CSV
-  const baseValues = {
-    giziKurang: 15.5,
-    imd: 65.2,
-    rokokPerkapita: 2.3,
-    kepadatan: 1250,
-    airMinum: 78.5,
-    sanitasi: 82.1
-  };
+// Fungsi untuk mendapatkan data variabel dari data penelitian aktual
+const getActualVariables = (regionName: string, researchData: any[]) => {
+  const regionData = researchData.find(data => 
+    data.NAMOBJ && data.NAMOBJ.toLowerCase() === regionName.toLowerCase()
+  );
   
-  // Variasi berdasarkan region untuk simulasi
-  const hash = regionName.split('').reduce((a, b) => {
-    a = ((a << 5) - a) + b.charCodeAt(0);
-    return a & a;
-  }, 0);
-  
-  const variation = (hash % 20 - 10) / 100; // -10% to +10% variation
+  if (!regionData) {
+    console.warn(`Data tidak ditemukan untuk region: ${regionName}`);
+    return {
+      giziKurang: 0,
+      imd: 0,
+      rokokPerkapita: 0,
+      kepadatan: 0,
+      airMinum: 0,
+      sanitasi: 0
+    };
+  }
   
   return {
-    giziKurang: baseValues.giziKurang * (1 + variation),
-    imd: baseValues.imd * (1 + variation * 0.5),
-    rokokPerkapita: baseValues.rokokPerkapita * (1 + variation),
-    kepadatan: baseValues.kepadatan * (1 + variation * 2),
-    airMinum: baseValues.airMinum * (1 + variation * 0.3),
-    sanitasi: baseValues.sanitasi * (1 + variation * 0.3)
+    giziKurang: regionData.GiziKurang || 0,
+    imd: regionData.IMD || 0,
+    rokokPerkapita: regionData.RokokPerkapita || 0,
+    kepadatan: regionData.Kepadatan || 0,
+    airMinum: regionData.AirMinumLayak || regionData.AirMinum || 0,
+    sanitasi: regionData.Sanitasi || 0
   };
 };
 
-// Sample actual values untuk validasi model
-const getSampleActualValue = (regionName: string): number => {
-  const hash = regionName.split('').reduce((a, b) => {
-    a = ((a << 5) - a) + b.charCodeAt(0);
-    return a & a;
-  }, 0);
+// Fungsi untuk mendapatkan nilai aktual dari data penelitian
+const getActualValue = (regionName: string, researchData: any[]): number => {
+  const regionData = researchData.find(data => 
+    data.NAMOBJ && data.NAMOBJ.toLowerCase() === regionName.toLowerCase()
+  );
   
-  return Math.abs(hash % 50) + 10; // 10-60 kasus
+  return regionData?.Penemuan || 0;
 };
 
 export function usePrediction(): UsePredictionReturn {
-  const { coefficients, error: dataError } = useResearchData();
+  const { coefficients, rawData, error: dataError } = useResearchData();
   
   const [selectedRegion, setSelectedRegion] = useState<string | null>(null);
   const [filters, setFilters] = useState<PredictionFilters>(defaultFilters);
@@ -109,7 +109,7 @@ export function usePrediction(): UsePredictionReturn {
   
   // Generate predictions untuk semua region
   const predictions = useMemo(() => {
-    if (!coefficients || coefficients.length === 0) return [];
+    if (!coefficients || coefficients.length === 0 || !rawData || rawData.length === 0) return [];
     
     setIsLoading(true);
     setError(null);
@@ -117,8 +117,8 @@ export function usePrediction(): UsePredictionReturn {
     try {
       const results: GWNBRPrediction[] = coefficients.map((coef: GWNBRCoefficient) => {
         const regionName = coef.Region || 'Unknown Region';
-        const variables = getSampleVariables(regionName);
-        const actualValue = getSampleActualValue(regionName);
+        const variables = getActualVariables(regionName, rawData);
+        const actualValue = getActualValue(regionName, rawData);
         
         // Hitung prediksi
         const predictedValue = calculateGWNBRPrediction(coef, variables);
@@ -138,8 +138,16 @@ export function usePrediction(): UsePredictionReturn {
           predictionDate: new Date().toISOString()
         };
         
-        // Hitung local metrics
-        const localMetrics = calculateModelMetrics([actualValue], [predictedValue]);
+        // Hitung local metrics (simplified untuk single data point)
+        const residual = actualValue - predictedValue;
+        const localMetrics: ModelMetrics = {
+          r2: 0, // R² tidak bermakna untuk single point
+          rmse: Math.abs(residual),
+          mae: Math.abs(residual),
+          mape: actualValue !== 0 ? Math.abs(residual / actualValue) * 100 : 0,
+          aic: 0,
+          bic: 0
+        };
         
         return {
           regionId: coef.Region || regionName,
@@ -165,7 +173,7 @@ export function usePrediction(): UsePredictionReturn {
       setIsLoading(false);
       return [];
     }
-  }, [coefficients]);
+  }, [coefficients, rawData]);
   
   // Generate equations untuk semua region
   const equations = useMemo(() => {
@@ -229,7 +237,10 @@ export function usePrediction(): UsePredictionReturn {
       averageAccuracy,
       bestPredictionRegion: predictions[bestIndex]?.regionName || '',
       worstPredictionRegion: predictions[worstIndex]?.regionName || '',
-      globalMetrics: calculateModelMetrics(actualValues, predictedValues),
+      globalMetrics: calculateGlobalModelMetrics(predictions.map(p => ({
+        actualValue: p.prediction.actualValue,
+        predictedValue: p.prediction.predictedValue
+      }))),
       significantVariablesCount: significantCounts
     };
   }, [predictions, interpretations]);

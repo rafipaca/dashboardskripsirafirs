@@ -13,31 +13,35 @@ import {
   Brain, 
   Target, 
   Lightbulb,
-  AlertTriangle,
   CheckCircle,
   ArrowUp,
   ArrowDown,
-  Minus,
   Download
 } from 'lucide-react';
-import {
-  RegionInterpretation
-} from '@/types/prediction';
+import { EquationDisplay } from '@/types/prediction';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { 
+  createSimpleInterpretation, 
+  generateFullInterpretation,
+  getVariableName
+} from '@/lib/interpretation/utils';
+
 
 interface InterpretationCardProps {
-  interpretation: RegionInterpretation;
+  equation: EquationDisplay;
   className?: string;
 }
 
-export function InterpretationCard({ interpretation, className }: InterpretationCardProps) {
+export function InterpretationCard({ equation, className }: InterpretationCardProps) {
   const [activeTab, setActiveTab] = useState('summary');
   
+  // Buat interpretasi sederhana dari equation
+  const interpretation = createSimpleInterpretation(equation);
   const { 
     regionName, 
-    interpretations, 
     significantFactors, 
+    nonSignificantFactors,
     dominantFactor, 
     recommendations, 
     summary 
@@ -45,19 +49,7 @@ export function InterpretationCard({ interpretation, className }: Interpretation
   
   // Export interpretation as report
   const exportReport = () => {
-    const content = `LAPORAN INTERPRETASI GWNBR\n${regionName}\n${'='.repeat(50)}\n\n` +
-      `RINGKASAN:\n${summary}\n\n` +
-      `FAKTOR SIGNIFIKAN (${significantFactors.length}):\n` +
-      significantFactors.map((factor, i) => 
-        `${i + 1}. ${factor.variableName}\n   - Koefisien: ${factor.coefficient.toFixed(4)}\n   - Pengaruh: ${factor.effect} (${factor.percentChange})\n   - Interpretasi: ${factor.interpretation}\n`
-      ).join('\n') +
-      `\nFAKTOR DOMINAN:\n${dominantFactor ? `${dominantFactor.variableName} (${dominantFactor.percentChange})` : 'Tidak ada'}\n\n` +
-      `REKOMENDASI:\n` +
-      recommendations.map((rec, i) => `${i + 1}. ${rec}`).join('\n') +
-      `\n\nDETAIL SEMUA VARIABEL:\n` +
-      interpretations.map((interp, i) => 
-        `${i + 1}. ${interp.variableName}\n   - Koefisien: ${interp.coefficient.toFixed(4)}\n   - Z-value: ${interp.zValue.toFixed(3)}\n   - Signifikan: ${interp.isSignificant ? 'Ya' : 'Tidak'}\n   - Interpretasi: ${interp.interpretation}\n   - Implikasi: ${interp.implication}\n`
-      ).join('\n');
+    const content = generateFullInterpretation(interpretation);
     
     const blob = new Blob([content], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
@@ -73,20 +65,10 @@ export function InterpretationCard({ interpretation, className }: Interpretation
   };
   
   // Get effect icon
-  const getEffectIcon = (effect: 'meningkatkan' | 'menurunkan') => {
-    return effect === 'meningkatkan' ? 
+  const getEffectIcon = (effect: 'increase' | 'decrease') => {
+    return effect === 'increase' ? 
       <ArrowUp className="h-4 w-4 text-red-500" /> : 
       <ArrowDown className="h-4 w-4 text-green-500" />;
-  };
-  
-  // Get magnitude color
-  const getMagnitudeColor = (magnitude: 'rendah' | 'sedang' | 'tinggi') => {
-    switch (magnitude) {
-      case 'tinggi': return 'text-red-600 bg-red-50';
-      case 'sedang': return 'text-yellow-600 bg-yellow-50';
-      case 'rendah': return 'text-blue-600 bg-blue-50';
-      default: return 'text-gray-600 bg-gray-50';
-    }
   };
   
   return (
@@ -136,16 +118,15 @@ export function InterpretationCard({ interpretation, className }: Interpretation
                 </div>
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="font-medium">{dominantFactor.variableName}</span>
+                    <span className="font-medium">{getVariableName(dominantFactor.variable)}</span>
                     <div className="flex items-center space-x-2">
                       {getEffectIcon(dominantFactor.effect)}
-                      <Badge className={getMagnitudeColor(dominantFactor.magnitude)}>
-                        {dominantFactor.magnitude.toUpperCase()}
+                      <Badge variant="secondary">
+                        {dominantFactor.effect === 'increase' ? 'MENINGKATKAN' : 'MENURUNKAN'}
                       </Badge>
-                      <span className="font-bold text-lg">{dominantFactor.percentChange}</span>
                     </div>
                   </div>
-                  <p className="text-sm text-gray-700">{dominantFactor.interpretation}</p>
+                  <p className="text-sm text-gray-700">{dominantFactor.description}</p>
                 </div>
               </div>
             )}
@@ -154,19 +135,19 @@ export function InterpretationCard({ interpretation, className }: Interpretation
             <div className="grid grid-cols-3 gap-4">
               <div className="text-center p-3 bg-green-50 rounded-lg">
                 <div className="text-2xl font-bold text-green-600">
-                  {significantFactors.filter(f => f.effect === 'menurunkan').length}
+                  {significantFactors.filter(f => f.effect === 'decrease').length}
                 </div>
                 <div className="text-sm text-green-700">Faktor Protektif</div>
               </div>
               <div className="text-center p-3 bg-red-50 rounded-lg">
                 <div className="text-2xl font-bold text-red-600">
-                  {significantFactors.filter(f => f.effect === 'meningkatkan').length}
+                  {significantFactors.filter(f => f.effect === 'increase').length}
                 </div>
                 <div className="text-sm text-red-700">Faktor Risiko</div>
               </div>
               <div className="text-center p-3 bg-gray-50 rounded-lg">
                 <div className="text-2xl font-bold text-gray-600">
-                  {interpretations.length - significantFactors.length}
+                  {nonSignificantFactors.length}
                 </div>
                 <div className="text-sm text-gray-700">Tidak Signifikan</div>
               </div>
@@ -174,14 +155,16 @@ export function InterpretationCard({ interpretation, className }: Interpretation
           </TabsContent>
           
           <TabsContent value="factors" className="space-y-4">
-            {significantFactors.length > 0 ? (
+            {/* Significant Factors */}
+            {significantFactors.length > 0 && (
               <div className="space-y-3">
+                <h3 className="font-semibold text-lg mb-3">Faktor Berpengaruh Signifikan</h3>
                 {significantFactors.map((factor, index) => (
                   <div 
                     key={index}
                     className={cn(
                       'p-4 rounded-lg border-l-4',
-                      factor.effect === 'meningkatkan' 
+                      factor.effect === 'increase' 
                         ? 'bg-red-50 border-red-400' 
                         : 'bg-green-50 border-green-400'
                     )}
@@ -189,26 +172,41 @@ export function InterpretationCard({ interpretation, className }: Interpretation
                     <div className="flex items-start justify-between mb-2">
                       <div className="flex items-center space-x-2">
                         {getEffectIcon(factor.effect)}
-                        <span className="font-semibold">{factor.variableName}</span>
-                        <Badge className={getMagnitudeColor(factor.magnitude)}>
-                          {factor.magnitude}
+                        <span className="font-semibold">{getVariableName(factor.variable)}</span>
+                        <Badge variant="secondary">
+                          {factor.effect === 'increase' ? 'MENINGKATKAN' : 'MENURUNKAN'}
                         </Badge>
                       </div>
-                      <div className="text-right">
-                        <div className="font-bold text-lg">{factor.percentChange}</div>
-                        <div className="text-xs text-gray-500">Z = {factor.zValue.toFixed(3)}</div>
-                      </div>
                     </div>
-                    <p className="text-sm text-gray-700 mb-2">{factor.interpretation}</p>
-                    <p className="text-xs text-gray-600 italic">{factor.implication}</p>
+                    <p className="text-sm text-gray-700">{factor.description}</p>
                   </div>
                 ))}
               </div>
-            ) : (
+            )}
+            
+            {/* Non-Significant Factors */}
+            {nonSignificantFactors.length > 0 && (
+              <div className="space-y-3">
+                <h3 className="font-semibold text-lg mb-3">Faktor Tidak Berpengaruh Signifikan</h3>
+                {nonSignificantFactors.map((factor, index) => (
+                  <div 
+                    key={index}
+                    className="p-4 rounded-lg border-l-4 bg-gray-50 border-gray-400"
+                  >
+                    <div className="flex items-start justify-between mb-2">
+                      <span className="font-semibold">{getVariableName(factor.variable)}</span>
+                      <Badge variant="outline">TIDAK SIGNIFIKAN</Badge>
+                    </div>
+                    <p className="text-sm text-gray-700">{factor.description}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+            
+            {significantFactors.length === 0 && nonSignificantFactors.length === 0 && (
               <Alert>
-                <AlertTriangle className="h-4 w-4" />
                 <AlertDescription>
-                  Tidak ada faktor yang menunjukkan pengaruh signifikan terhadap kasus pneumonia balita di wilayah ini.
+                  Tidak ada data faktor yang tersedia untuk interpretasi.
                 </AlertDescription>
               </Alert>
             )}
@@ -241,23 +239,21 @@ export function InterpretationCard({ interpretation, className }: Interpretation
             )}
             
             {/* Priority Actions */}
-            {significantFactors.length > 0 && (
+            {significantFactors.filter(f => f.effect === 'increase').length > 0 && (
               <div className="mt-6 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
                 <div className="flex items-center space-x-2 mb-3">
-                  <AlertTriangle className="h-5 w-5 text-yellow-600" />
+                  <Target className="h-5 w-5 text-yellow-600" />
                   <span className="font-semibold text-yellow-800">Prioritas Intervensi</span>
                 </div>
                 <div className="space-y-2">
                   {significantFactors
-                    .filter(f => f.effect === 'meningkatkan')
-                    .sort((a, b) => Math.abs(b.coefficient) - Math.abs(a.coefficient))
+                    .filter(f => f.effect === 'increase')
                     .slice(0, 3)
                     .map((factor, index) => (
                       <div key={index} className="flex items-center space-x-2 text-sm">
                         <span className="font-medium text-yellow-700">
-                          {index + 1}. {factor.variableName}
+                          {index + 1}. {getVariableName(factor.variable)}
                         </span>
-                        <span className="text-yellow-600">({factor.percentChange})</span>
                       </div>
                     ))
                   }
@@ -268,69 +264,57 @@ export function InterpretationCard({ interpretation, className }: Interpretation
           
           <TabsContent value="details" className="space-y-4">
             <div className="space-y-3">
-              {interpretations.map((interp, index) => (
+              {/* Significant Factors Details */}
+              {significantFactors.map((factor, index) => (
                 <div 
-                  key={index}
-                  className={cn(
-                    'p-4 rounded-lg border',
-                    interp.isSignificant 
-                      ? 'bg-white border-gray-200 shadow-sm' 
-                      : 'bg-gray-50 border-gray-100'
-                  )}
+                  key={`sig-${index}`}
+                  className="p-4 rounded-lg border bg-white border-gray-200 shadow-sm"
                 >
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center space-x-2">
-                      {interp.isSignificant ? (
-                        <CheckCircle className="h-5 w-5 text-green-600" />
-                      ) : (
-                        <Minus className="h-5 w-5 text-gray-400" />
-                      )}
-                      <span className={cn(
-                        'font-semibold',
-                        interp.isSignificant ? 'text-gray-900' : 'text-gray-500'
-                      )}>
-                        {interp.variableName}
+                      <CheckCircle className="h-5 w-5 text-green-600" />
+                      <span className="font-semibold text-gray-900">
+                        {getVariableName(factor.variable)}
                       </span>
-                      {interp.isSignificant && (
-                        <Badge className={getMagnitudeColor(interp.magnitude)}>
-                          {interp.magnitude}
-                        </Badge>
-                      )}
-                    </div>
-                    <div className="text-right">
-                      <div className={cn(
-                        'font-mono text-sm',
-                        interp.isSignificant ? 'text-gray-900' : 'text-gray-500'
-                      )}>
-                        β = {interp.coefficient.toFixed(4)}
-                      </div>
-                      <div className="text-xs text-gray-500">
-                        Z = {interp.zValue.toFixed(3)}
-                      </div>
+                      <Badge variant="secondary">
+                        {factor.effect === 'increase' ? 'MENINGKATKAN' : 'MENURUNKAN'}
+                      </Badge>
                     </div>
                   </div>
                   
-                  {interp.isSignificant && (
-                    <div className="flex items-center space-x-2 mb-2">
-                      {getEffectIcon(interp.effect)}
-                      <span className="text-sm font-medium">
-                        {interp.effect === 'meningkatkan' ? 'Meningkatkan' : 'Menurunkan'} risiko sebesar {interp.percentChange}
-                      </span>
-                    </div>
-                  )}
+                  <div className="flex items-center space-x-2 mb-2">
+                    {getEffectIcon(factor.effect)}
+                    <span className="text-sm font-medium">
+                      {factor.effect === 'increase' ? 'Meningkatkan' : 'Menurunkan'} risiko pneumonia balita
+                    </span>
+                  </div>
                   
-                  <p className={cn(
-                    'text-sm mb-2',
-                    interp.isSignificant ? 'text-gray-700' : 'text-gray-500'
-                  )}>
-                    {interp.interpretation}
+                  <p className="text-sm text-gray-700">
+                    {factor.description}
                   </p>
+                </div>
+              ))}
+              
+              {/* Non-Significant Factors Details */}
+              {nonSignificantFactors.map((factor, index) => (
+                <div 
+                  key={`non-sig-${index}`}
+                  className="p-4 rounded-lg border bg-gray-50 border-gray-100"
+                >
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center space-x-2">
+                      <CheckCircle className="h-5 w-5 text-gray-400" />
+                      <span className="font-semibold text-gray-500">
+                        {getVariableName(factor.variable)}
+                      </span>
+                      <Badge variant="outline">
+                        TIDAK SIGNIFIKAN
+                      </Badge>
+                    </div>
+                  </div>
                   
-                  <p className={cn(
-                    'text-xs italic',
-                    interp.isSignificant ? 'text-gray-600' : 'text-gray-400'
-                  )}>
-                    {interp.implication}
+                  <p className="text-sm text-gray-500">
+                    {factor.description}
                   </p>
                 </div>
               ))}
