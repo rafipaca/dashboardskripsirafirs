@@ -35,7 +35,7 @@ export function EquationCard({ equation, className }: EquationCardProps) {
   
   // Format coefficient dengan tanda dan warna
   const formatCoefficient = (value: number, isSignificant: boolean) => {
-    const formatted = value >= 0 ? `+${value.toFixed(4)}` : value.toFixed(4);
+    const formatted = value >= 0 ? `+${value.toFixed(7)}` : value.toFixed(7);
     return {
       value: formatted,
       color: isSignificant ? 'text-green-600' : 'text-gray-500'
@@ -55,7 +55,7 @@ export function EquationCard({ equation, className }: EquationCardProps) {
   // Export equation as text
   const exportEquation = () => {
     const content = `Persamaan GWNBR - ${regionName}\n\n${equationString}\n\nKoefisien:\n${Object.entries(coefficients).map(([key, coef]) => 
-      `${key}: ${coef.value.toFixed(4)} (Z: ${coef.zValue.toFixed(3)}, Signifikan: ${coef.significant ? 'Ya' : 'Tidak'})`
+      `${key}: ${coef.value.toFixed(7)} (Z: ${coef.zValue.toFixed(3)}, Signifikan: ${coef.significant ? 'Ya' : 'Tidak'})`
     ).join('\n')}\n\nTheta (θ): ${theta.toFixed(4)}`;
     
     const blob = new Blob([content], { type: 'text/plain' });
@@ -124,7 +124,7 @@ export function EquationCard({ equation, className }: EquationCardProps) {
                 </div>
                 <div className="text-sm font-mono leading-relaxed break-all">
                   <span className={coefficients.intercept.significant ? 'text-green-600 font-semibold' : 'text-gray-500'}>
-                    {coefficients.intercept.value.toFixed(4)}
+                    {coefficients.intercept.value.toFixed(7)}
                   </span>
                   {Object.entries(coefficients).slice(1).map(([key, coef]) => {
                     const formatted = formatCoefficient(coef.value, coef.significant);
@@ -223,7 +223,7 @@ export function EquationCard({ equation, className }: EquationCardProps) {
                       'font-mono text-lg',
                       coef.significant ? 'text-green-700' : 'text-gray-500'
                     )}>
-                      {coef.value.toFixed(4)}
+                      {coef.value.toFixed(7)}
                     </div>
                     <div className="text-xs text-gray-500">
                       {coef.value > 0 ? 'Meningkatkan' : 'Menurunkan'}
@@ -254,7 +254,7 @@ export function EquationCard({ equation, className }: EquationCardProps) {
                           'text-right py-2',
                           coef.significant ? 'text-green-600 font-semibold' : 'text-gray-500'
                         )}>
-                          {coef.value.toFixed(4)}
+                          {coef.value.toFixed(7)}
                         </td>
                         <td className="text-center py-2">
                           {coef.significant ? (

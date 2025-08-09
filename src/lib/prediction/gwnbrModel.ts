@@ -197,12 +197,15 @@ export function generateEquationDisplay(
  * Generate string equation
  */
 function generateEquationString(coefficients: GWNBRCoefficient): string {
+  const clampToZero = (v: number) => (Math.abs(v) < 1e-7 ? 0 : v);
+  const toFixed7 = (v: number) => clampToZero(v).toFixed(7);
   const formatCoef = (value: number, variable: string) => {
-    const sign = value >= 0 ? '+' : '';
-    return `${sign}${value.toFixed(4)}×${variable}`;
+    const v = clampToZero(value);
+    const sign = v >= 0 ? '+' : '';
+    return `${sign}${Math.abs(v).toFixed(7)}×${variable}`;
   };
   
-  return `ln(μ) = ${coefficients.Intercept.toFixed(4)} ` +
+  return `ln(μ) = ${toFixed7(coefficients.Intercept)} ` +
     `${formatCoef(coefficients.GiziKurangKoef, 'GiziKurang')} ` +
     `${formatCoef(coefficients.IMDKoef, 'IMD')} ` +
     `${formatCoef(coefficients.RokokPerkapitaKoef, 'Rokok')} ` +

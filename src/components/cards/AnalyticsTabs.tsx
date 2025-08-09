@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { DownloadIcon, ShareIcon, ActivityIcon, TrendingUpIcon } from "lucide-react";
 // import { Badge } from "@/components/ui/badge";
 import { useChartData, useSpatialAnalysis, useResearchData } from "@/hooks/useResearchData";
+import { useMapData } from "@/hooks/useMapData";
 // Import new refactored components
 
 // Import prediction components
@@ -25,6 +26,7 @@ export default function AnalyticsTabs({ selectedRegion }: AnalyticsTabsProps) {
   const { /* barChartData, pieChartData, lineChartData, */ summaryStats, loading, error } = useChartData();
   const { modelEffectiveness } = useSpatialAnalysis();
   const { getRegionData } = useResearchData();
+  const { findRegionData } = useMapData();
   
   // Menggunakan hook prediksi untuk fitur baru
   const {
@@ -59,11 +61,16 @@ export default function AnalyticsTabs({ selectedRegion }: AnalyticsTabsProps) {
   };
 
   // Regional raw data for the selected region
-  const regionData = selectedRegion ? getRegionData(selectedRegion) : null;
+  // Use robust finder to honor exact CSV naming (Kota/Kabupaten/Administrasi)
+  const regionData = selectedRegion ? (findRegionData(selectedRegion) || getRegionData(selectedRegion)) : null;
   const nfID = (opts?: Intl.NumberFormatOptions) => new Intl.NumberFormat('id-ID', opts);
   const formatNum = (val?: number | null) => (typeof val === 'number' ? nfID().format(val) : 'N/A');
   const formatPct = (val?: number | null, digits: number = 2) =>
     (typeof val === 'number' ? `${nfID({ minimumFractionDigits: digits, maximumFractionDigits: digits }).format(val)}%` : 'N/A');
+  const formatDec = (val?: number | null, digits: number = 3) =>
+    (typeof val === 'number' ? nfID({ minimumFractionDigits: digits, maximumFractionDigits: digits }).format(val) : 'N/A');
+  const formatInt = (val?: number | null) =>
+    (typeof val === 'number' ? nfID({ maximumFractionDigits: 0 }).format(val) : 'N/A');
 
   if (loading) {
     return (
@@ -195,7 +202,7 @@ export default function AnalyticsTabs({ selectedRegion }: AnalyticsTabsProps) {
                             </div>
                             <div className="p-4 bg-gradient-to-br from-emerald-50 to-green-50 rounded-lg border">
                               <div className="text-sm font-medium text-emerald-800">Gizi Kurang</div>
-                              <div className="text-2xl font-bold text-emerald-600">{formatPct(regionData.GiziKurang, 3)}</div>
+                              <div className="text-2xl font-bold text-emerald-600">{formatInt(regionData.GiziKurang)}</div>
                             </div>
                             <div className="p-4 bg-gradient-to-br from-cyan-50 to-sky-50 rounded-lg border">
                               <div className="text-sm font-medium text-cyan-800">IMD</div>
@@ -203,7 +210,7 @@ export default function AnalyticsTabs({ selectedRegion }: AnalyticsTabsProps) {
                             </div>
                             <div className="p-4 bg-gradient-to-br from-orange-50 to-amber-50 rounded-lg border">
                               <div className="text-sm font-medium text-orange-800">Perokok/Kapita</div>
-                              <div className="text-2xl font-bold text-orange-600">{formatPct(regionData.RokokPerkapita, 3)}</div>
+                              <div className="text-2xl font-bold text-orange-600">{formatDec(regionData.RokokPerkapita, 3)}</div>
                             </div>
                             <div className="p-4 bg-gradient-to-br from-purple-50 to-violet-50 rounded-lg border">
                               <div className="text-sm font-medium text-purple-800">Kepadatan Penduduk</div>

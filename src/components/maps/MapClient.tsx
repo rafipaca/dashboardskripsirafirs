@@ -79,12 +79,13 @@ const MapClient = ({ data, onRegionSelect, activeLayer, selectedRegion, onPredic
         targetLayer.setStyle(getFeatureStyle(feature, activeLayer));
       },
       click: (e: L.LeafletMouseEvent) => {
+        // Prefer NAMOBJ (aligned with CSV) to preserve Kota/Kabupaten/Admin names exactly
         const regionName = properties?.NAMOBJ || properties?.WADMKK || properties?.NAME_2 || "Unknown";
-        
-        // If clicking the same region, deselect it. Otherwise, select the new one.
-  const newSelectedRegion = internalSelectedRegion === regionName ? null : regionName;
-  setSelectedRegion(newSelectedRegion);
-  onRegionSelect?.(newSelectedRegion);
+
+        // Toggle only if clicking exactly the same full name
+        const newSelectedRegion = internalSelectedRegion && internalSelectedRegion === regionName ? null : regionName;
+        setSelectedRegion(newSelectedRegion);
+        onRegionSelect?.(newSelectedRegion);
         
         if (onPredictionSelect) {
           onPredictionSelect(newSelectedRegion);
@@ -226,7 +227,7 @@ const MapClient = ({ data, onRegionSelect, activeLayer, selectedRegion, onPredic
             style={(feature) => {
               const baseStyle = feature ? getFeatureStyle(feature, activeLayer) : { weight: 1, fillOpacity: 0.7 };
               const regionName = feature?.properties?.NAMOBJ || feature?.properties?.WADMKK || feature?.properties?.NAME_2 || "";
-              const isSelected = regionName === selectedRegion;
+              const isSelected = selectedRegion ? (regionName === selectedRegion) : false;
               
               return {
                 ...baseStyle,

@@ -18,28 +18,53 @@ export const useMapData = () => {
     return [...new Set(names)].sort();
   }, [researchData]);
 
+  // Helpers to normalize names and detect type
+  const normalizeBase = (name: string) => name
+    .toLowerCase()
+    .replace(/kota\s+adm\.?/g, 'kota administrasi')
+    .replace(/adm\.?\s+kep\.?/g, 'kepulauan seribu')
+    .replace(/kab\.?/g, 'kabupaten')
+    .replace(/[.]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  const detectType = (name: string): 'kota' | 'kabupaten' | 'kota administrasi' | undefined => {
+    const n = name.toLowerCase();
+    if (n.includes('kota administrasi') || n.includes('adm.') || n.includes('administrasi')) return 'kota administrasi';
+    if (n.includes('kota')) return 'kota';
+    if (n.includes('kabupaten') || n.includes('kab.')) return 'kabupaten';
+    return undefined;
+  };
+
   const findRegionData = useCallback(
     (regionName: string): ResearchDataPoint | undefined => {
       if (!researchData || !regionName) return undefined;
       
-      // First try exact match
-      let match = researchData.find((item) => item.NAMOBJ?.toLowerCase() === regionName.toLowerCase());
-      if (match) return match;
+      // 1) Exact match first (case-insensitive)
+      const exact = researchData.find((item) => item.NAMOBJ?.toLowerCase() === regionName.toLowerCase());
+      if (exact) return exact;
       
-      // Normalize both names for better matching
-      const normalizedRegionName = regionName.replace(/^KABUPATEN\s/i, '').toLowerCase();
-      match = researchData.find((item) => {
-        const itemName = item.NAMOBJ?.toLowerCase() || '';
-        const normalizedItemName = itemName.replace(/^kabupaten\s/i, '');
-        
-        // Try various matching strategies
-        return itemName.includes(normalizedRegionName) || 
-               normalizedItemName.includes(normalizedRegionName) ||
-               normalizedRegionName.includes(normalizedItemName) ||
-               itemName === normalizedRegionName;
+      // 2) Base-name match with type preference
+      const targetBase = normalizeBase(regionName);
+      const targetType = detectType(regionName);
+      const candidates = researchData.filter((item) => normalizeBase(item.NAMOBJ || '') === targetBase);
+      if (candidates.length === 1) return candidates[0];
+      if (candidates.length > 1 && targetType) {
+        const typeFiltered = candidates.filter((c) => {
+          const t = detectType(c.NAMOBJ || '');
+          if (targetType === 'kota administrasi') return t === 'kota administrasi' || (t === 'kota' && (c.NAMOBJ || '').toLowerCase().includes('adm'));
+          return t === targetType;
+        });
+        if (typeFiltered.length > 0) return typeFiltered[0];
+      }
+      
+      // 3) Fallback to inclusive matching
+      const nrm = targetBase;
+      const loose = researchData.find((item) => {
+        const base = normalizeBase(item.NAMOBJ || '');
+        return base.includes(nrm) || nrm.includes(base);
       });
-      
-      return match;
+      return loose;
     },
     [researchData]
   );
@@ -119,17 +144,18 @@ export const useMapData = () => {
       if (error) return `Error: ${error}`;
       if (!regionData) return `${regionName}<br>Data tidak ditemukan.`;
 
-      const regionNameFromFeature = regionData.NAMOBJ || 'N/A';
-      const formatValue = (value: unknown) => (value !== undefined && value !== null && typeof value === 'number') ? value.toLocaleString() : 'N/A';
+  const regionNameFromFeature = regionData.NAMOBJ || 'N/A';
+  const formatValue = (value: unknown) => (value !== undefined && value !== null && typeof value === 'number') ? value.toLocaleString() : 'N/A';
+  const formatInt = (value: unknown) => (value !== undefined && value !== null && typeof value === 'number') ? Math.round(value).toLocaleString() : 'N/A';
 
       return `
         <div style="font-family: Arial, sans-serif; font-size: 14px; min-width: 250px;">
           <strong style="font-size: 16px; color: #333;">${regionNameFromFeature}</strong>
           <hr style="margin: 4px 0;"/>
           <p><strong>Kasus Pneumonia:</strong> ${formatValue(regionData.Penemuan)}</p>
-          <p><strong>Gizi Kurang:</strong> ${formatValue(regionData.GiziKurang)}%</p>
+          <p><strong>Gizi Kurang:</strong> ${formatInt(regionData.GiziKurang)}</p>
           <p><strong>IMD:</strong> ${formatValue(regionData.IMD)}%</p>
-          <p><strong>Perokok/Kapita:</strong> ${formatValue(regionData.RokokPerkapita)}%</p>
+          <p><strong>Perokok/Kapita:</strong> ${formatValue(regionData.RokokPerkapita)}</p>
           <p><strong>Kepadatan Penduduk:</strong> ${formatValue(regionData.Kepadatan)} jiwa/km²</p>
           <p><strong>Sanitasi Layak:</strong> ${formatValue(regionData.Sanitasi)}%</p>
           <p><strong>Air Minum Layak:</strong> ${formatValue(regionData.AirMinumLayak)}%</p>
@@ -153,9 +179,9 @@ export const useMapData = () => {
 
       if (!regionCoeffs) return `Model untuk ${regionName} tidak ditemukan.`;
 
-      const formatCoeff = (val: number) => (val >= 0 ? `+ ${val.toFixed(3)}` : `- ${Math.abs(val).toFixed(3)}`);
+  const formatCoeff = (val: number) => (val >= 0 ? `+ ${val.toFixed(7)}` : `- ${Math.abs(val).toFixed(7)}`);
 
-      let equation = `Y = ${regionCoeffs.Intercept.toFixed(3)} `;
+  let equation = `Y = ${regionCoeffs.Intercept.toFixed(7)} `;
       if (Math.abs(regionCoeffs.GiziKurangZ) > 1.96) equation += `${formatCoeff(regionCoeffs.GiziKurangKoef)}*X1 `;
       if (Math.abs(regionCoeffs.IMDZ) > 1.96) equation += `${formatCoeff(regionCoeffs.IMDKoef)}*X2 `;
       if (Math.abs(regionCoeffs.RokokPerkapitaZ) > 1.96) equation += `${formatCoeff(regionCoeffs.RokokPerkapitaKoef)}*X3 `;
@@ -174,6 +200,7 @@ export const useMapData = () => {
     regionNames,
     getFeatureStyle,
     generateTooltipContent,
-    generateModelEquation,
+  generateModelEquation,
+  findRegionData,
   };
 };

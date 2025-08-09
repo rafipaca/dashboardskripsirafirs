@@ -7,8 +7,8 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   Brain, 
   Target, 
@@ -39,7 +39,6 @@ interface InterpretationCardProps {
 
 export function InterpretationCard({ equation, className }: InterpretationCardProps) {
   const [activeTab, setActiveTab] = useState('summary');
-  
   // Buat interpretasi sederhana dari equation
   const interpretation = createSimpleInterpretation(equation);
   const { 
@@ -97,14 +96,18 @@ export function InterpretationCard({ equation, className }: InterpretationCardPr
       
       <CardContent>
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-4 mb-4">
             <TabsTrigger value="summary">Ringkasan</TabsTrigger>
             <TabsTrigger value="factors">Faktor</TabsTrigger>
             <TabsTrigger value="recommendations">Rekomendasi</TabsTrigger>
             <TabsTrigger value="details">Detail</TabsTrigger>
           </TabsList>
-          
+
           <TabsContent value="summary" className="space-y-4">
+            <div className="flex items-center gap-2">
+              <Brain className="h-4 w-4 text-purple-600" />
+              <h3 className="text-sm font-semibold text-gray-900">Ringkasan</h3>
+            </div>
             {/* Summary */}
             <Alert>
               <Brain className="h-4 w-4" />
@@ -156,9 +159,14 @@ export function InterpretationCard({ equation, className }: InterpretationCardPr
                 <div className="text-sm text-gray-700">Tidak Signifikan</div>
               </div>
             </div>
+
           </TabsContent>
-          
+
           <TabsContent value="factors" className="space-y-4">
+            <div className="flex items-center gap-2">
+              <Target className="h-4 w-4 text-rose-600" />
+              <h3 className="text-sm font-semibold text-gray-900">Faktor</h3>
+            </div>
             {/* Significant Factors */}
             {significantFactors.length > 0 && (
               <div className="space-y-4">
@@ -211,22 +219,22 @@ export function InterpretationCard({ equation, className }: InterpretationCardPr
                 </AlertDescription>
               </Alert>
             )}
+
           </TabsContent>
-          
+
           <TabsContent value="recommendations" className="space-y-4">
+            <div className="flex items-center gap-2">
+              <Lightbulb className="h-4 w-4 text-amber-600" />
+              <h3 className="text-sm font-semibold text-gray-900">Rekomendasi</h3>
+            </div>
             {recommendations.length > 0 ? (
-              <div className="space-y-3">
+              <div className="grid md:grid-cols-2 gap-3">
                 {recommendations.map((recommendation, index) => (
-                  <div key={index} className="flex items-start space-x-3 p-3 bg-blue-50 rounded-lg">
-                    <div className="flex-shrink-0">
-                      <div className="w-6 h-6 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-bold">
-                        {index + 1}
-                      </div>
+                  <div key={index} className="flex items-start gap-3 p-3 bg-blue-50 rounded-lg border border-blue-100">
+                    <div className="w-6 h-6 bg-blue-600 text-white rounded-full flex items-center justify-center text-xs font-bold mt-0.5">
+                      {index + 1}
                     </div>
-                    <div className="flex-1">
-                      <p className="text-sm text-blue-800">{recommendation}</p>
-                    </div>
-                    <Lightbulb className="h-4 w-4 text-blue-600 flex-shrink-0" />
+                    <p className="text-sm text-blue-800">{recommendation}</p>
                   </div>
                 ))}
               </div>
@@ -262,8 +270,12 @@ export function InterpretationCard({ equation, className }: InterpretationCardPr
               </div>
             )}
           </TabsContent>
-          
+
           <TabsContent value="details" className="space-y-4">
+            <div className="flex items-center gap-2">
+              <CheckCircle className="h-4 w-4 text-emerald-600" />
+              <h3 className="text-sm font-semibold text-gray-900">Detail</h3>
+            </div>
             <div className="space-y-3">
               {/* Significant Factors Details */}
               {significantFactors.map((factor, index) => (

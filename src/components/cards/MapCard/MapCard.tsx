@@ -124,7 +124,8 @@ export default function MapCard({ geojsonData, isLoading, error, onRetry, onRegi
   const [selectedProvince, setSelectedProvince] = useState('');
   const [selectedRegion, setSelectedRegion] = useState<Feature | null>(null);
 
-  const filteredRegions = regionsByProvince[selectedProvince] || [];
+  // Filter duplicates and keep full names (Kota/Kabupaten) to avoid collisions like "Malang"
+  const filteredRegions = (regionsByProvince[selectedProvince] || []).filter(Boolean);
 
   const handleProvinceChange = (province: string) => {
     setSelectedProvince(province);
@@ -134,42 +135,34 @@ export default function MapCard({ geojsonData, isLoading, error, onRetry, onRegi
   // Effect to set a default province once data is loaded
   useEffect(() => {
     if (availableProvinces.length > 0 && !selectedProvince) {
-      // Default to JAWA TIMUR if it exists, otherwise the first province
-      const defaultProvince = availableProvinces.find(p => p.toUpperCase() === 'JAWA TIMUR') || availableProvinces[0];
+  // Default to JAWA BARAT if it exists, otherwise the first province
+  const defaultProvince = availableProvinces.find(p => p.toUpperCase() === 'JAWA BARAT') || availableProvinces[0];
       setSelectedProvince(defaultProvince);
     }
   }, [availableProvinces, selectedProvince]);
 
   const handleRegionSelect = (regionName: string | null) => {
-    setSelectedRegionName(regionName || '');
+  setSelectedRegionName(regionName || '');
     
-    // Find the feature that corresponds to the region name
-    // Try multiple property names and formats to match with GeoJSON data
-    const feature = geojsonData?.features.find(f => {
-      const props = f.properties;
-      const geoName = props?.NAMOBJ || props?.WADMKK || props?.nama_kab;
+    // Find the feature strictly by NAMOBJ to avoid Kota/Kabupaten collisions
+    let feature: Feature | null = null;
+    if (regionName && geojsonData) {
+      feature = geojsonData.features.find(f => f.properties?.NAMOBJ === regionName) as Feature | null;
       
-      if (!regionName || !geoName) return false;
-      
-      // Direct match
-      if (geoName === regionName) return true;
-      
-      // Try matching with "Kota" or "Kabupaten" prefix added to GeoJSON name
-      const kotaName = `Kota ${geoName}`;
-      const kabName = `Kabupaten ${geoName}`;
-      
-      if (kotaName === regionName || kabName === regionName) return true;
-      
-      // Try matching with prefix removed from regionName
-      const cleanRegionName = regionName.replace(/^(Kota|Kabupaten)\s+/i, '');
-      if (geoName === cleanRegionName) return true;
-      
-      return false;
-    }) || null;
+      // Fallback (only if strict fails): try exact equality on alternative fields without stripping prefixes
+      if (!feature) {
+        feature = geojsonData.features.find(f => {
+          const props = f.properties;
+          return props?.WADMKK === regionName || props?.nama_kab === regionName;
+        }) as Feature | null;
+      }
+    }
     setSelectedRegion(feature);
 
-    onRegionSelect?.(regionName);
-    onPredictionSelect?.(regionName);
+    // Always pass the exact CSV-matching name when available
+    const exactName = feature?.properties?.NAMOBJ || regionName || null;
+  onRegionSelect?.(exactName);
+  onPredictionSelect?.(exactName);
   };
 
   const renderMapContent = () => {
@@ -255,7 +248,7 @@ export default function MapCard({ geojsonData, isLoading, error, onRetry, onRegi
                  <div>
                    <label className="text-sm font-medium mb-2 block">Kabupaten/Kota</label>
                    {wilayahError && <p className="text-xs text-destructive mb-2">Gagal memuat data wilayah.</p>}
-                   <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
+                  <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
                      <PopoverTrigger asChild>
                        <Button
                          variant="outline"
@@ -268,8 +261,8 @@ export default function MapCard({ geojsonData, isLoading, error, onRetry, onRegi
                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                        </Button>
                      </PopoverTrigger>
-                     <PopoverContent className="w-[300px] p-0">
-                       <Command>
+                    <PopoverContent className="w-[300px] p-0 max-h-96 overflow-auto">
+                      <Command>
                          <CommandInput placeholder="Cari wilayah..." />
                          <CommandEmpty>Wilayah tidak ditemukan.</CommandEmpty>
                          <CommandGroup>
