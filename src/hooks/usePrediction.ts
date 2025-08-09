@@ -18,7 +18,6 @@ import {
   calculateGWNBRPrediction,
   calculateConfidenceInterval,
   calculateStandardError,
-  calculateModelMetrics,
   calculateGlobalModelMetrics,
   generateEquationDisplay,
   generateRegionInterpretation
@@ -63,9 +62,11 @@ const defaultFilters: PredictionFilters = {
 
 // Sample data untuk variabel independen (dalam implementasi nyata, ini akan diambil dari data CSV)
 // Fungsi untuk mendapatkan data variabel dari data penelitian aktual
-const getActualVariables = (regionName: string, researchData: any[]) => {
-  const regionData = researchData.find(data => 
-    data.NAMOBJ && data.NAMOBJ.toLowerCase() === regionName.toLowerCase()
+const getActualVariables = (regionName: string, researchData: unknown[]) => {
+  const regionData = researchData.find((data): data is Record<string, unknown> => 
+    typeof data === 'object' && data !== null && 
+    'NAMOBJ' in data && typeof (data as Record<string, unknown>).NAMOBJ === 'string' &&
+    ((data as Record<string, unknown>).NAMOBJ as string).toLowerCase() === regionName.toLowerCase()
   );
   
   if (!regionData) {
@@ -81,22 +82,24 @@ const getActualVariables = (regionName: string, researchData: any[]) => {
   }
   
   return {
-    giziKurang: regionData.GiziKurang || 0,
-    imd: regionData.IMD || 0,
-    rokokPerkapita: regionData.RokokPerkapita || 0,
-    kepadatan: regionData.Kepadatan || 0,
-    airMinum: regionData.AirMinumLayak || regionData.AirMinum || 0,
-    sanitasi: regionData.Sanitasi || 0
+    giziKurang: (regionData?.GiziKurang as number) || 0,
+    imd: (regionData?.IMD as number) || 0,
+    rokokPerkapita: (regionData?.RokokPerkapita as number) || 0,
+    kepadatan: (regionData?.Kepadatan as number) || 0,
+    airMinum: (regionData?.AirMinumLayak as number) || (regionData?.AirMinum as number) || 0,
+    sanitasi: (regionData?.Sanitasi as number) || 0
   };
 };
 
 // Fungsi untuk mendapatkan nilai aktual dari data penelitian
-const getActualValue = (regionName: string, researchData: any[]): number => {
-  const regionData = researchData.find(data => 
-    data.NAMOBJ && data.NAMOBJ.toLowerCase() === regionName.toLowerCase()
+const getActualValue = (regionName: string, researchData: unknown[]): number => {
+  const regionData = researchData.find((data): data is Record<string, unknown> => 
+    typeof data === 'object' && data !== null && 
+    'NAMOBJ' in data && typeof (data as Record<string, unknown>).NAMOBJ === 'string' &&
+    ((data as Record<string, unknown>).NAMOBJ as string).toLowerCase() === regionName.toLowerCase()
   );
   
-  return regionData?.Penemuan || 0;
+  return (regionData?.Penemuan as number) || 0;
 };
 
 export function usePrediction(): UsePredictionReturn {
@@ -197,8 +200,9 @@ export function usePrediction(): UsePredictionReturn {
   const globalSummary = useMemo((): GlobalModelSummary | null => {
     if (predictions.length === 0) return null;
     
-    const actualValues = predictions.map(p => p.prediction.actualValue);
-    const predictedValues = predictions.map(p => p.prediction.predictedValue);
+    // Variabel untuk analisis lanjutan jika diperlukan
+    // const actualValues = predictions.map(p => p.prediction.actualValue);
+    // const predictedValues = predictions.map(p => p.prediction.predictedValue);
     const accuracies = predictions.map(p => {
       const mape = Math.abs((p.prediction.actualValue - p.prediction.predictedValue) / p.prediction.actualValue);
       return 1 - mape; // Convert MAPE to accuracy

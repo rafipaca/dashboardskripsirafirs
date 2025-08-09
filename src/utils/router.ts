@@ -3,8 +3,9 @@ import { useRouter as useNextRouter } from 'next/navigation';
 // Main application routes
 export const AppRoutes = {
   HOME: '/',
-  ABOUT: '/tentang',
-  METHODOLOGY: '/metodologi',
+  DASHBOARD: '/dashboard',
+  ABOUT: '/dashboard/tentang',
+  METHODOLOGY: '/dashboard/metodologi',
 };
 
 // Define route parameters and their types
@@ -94,4 +95,4 @@ export const useRouter = () => {
       return breadcrumbs;
     }
   };
-}; 
+};

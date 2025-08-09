@@ -26,13 +26,13 @@ const MapClient = ({ data, onRegionSelect, activeLayer, selectedRegion, onPredic
   
   const { getFeatureStyle, generateTooltipContent } = useMapData();
 
-  // Define bounds for Indonesia with some padding using useMemo
-  const indonesiaBounds: L.LatLngBoundsExpression = useMemo(() => [
-    [-11.0, 94.0], // South West corner
-    [6.0, 141.0],  // North East corner
+  // Define tighter bounds for Java Island to restrict zoom out area
+  const javaBounds: L.LatLngBoundsExpression = useMemo(() => [
+    [-8.5, 105.5], // South West corner (Banten) - tighter bounds
+    [-5.5, 114.0], // North East corner (Jawa Timur) - tighter bounds
   ], []);
   
-  // Define more specific bounds for Java Island using useMemo
+  // Define more restrictive bounds to keep focus on Java Island
   useEffect(() => {
     if (selectedRegion && geoJsonRef.current && mapRef.current) {
       const layers = geoJsonRef.current.getLayers();
@@ -53,10 +53,7 @@ const MapClient = ({ data, onRegionSelect, activeLayer, selectedRegion, onPredic
     }
   }, [selectedRegion]);
 
-  const javaBounds: L.LatLngBoundsExpression = useMemo(() => [
-    [-8.8, 105.0], // South West corner
-    [-5.0, 114.6], // North East corner
-  ], []);
+
 
   // Function to handle events for each GeoJSON feature
   const onEachFeature = (feature: GeoJSON.Feature, layer: L.Layer) => {
@@ -168,8 +165,8 @@ const MapClient = ({ data, onRegionSelect, activeLayer, selectedRegion, onPredic
     mapContainer.appendChild(legendContainer);
     
     // Apply bounds restrictions with smooth animation
-    mapRef.current.setMaxBounds(indonesiaBounds);
-    mapRef.current.setMinZoom(5);
+    mapRef.current.setMaxBounds(javaBounds);
+    mapRef.current.setMinZoom(7);
     mapRef.current.setMaxZoom(12);
     mapRef.current.fitBounds(javaBounds);
     
@@ -183,7 +180,7 @@ const MapClient = ({ data, onRegionSelect, activeLayer, selectedRegion, onPredic
         }
       }
     };
-  }, [indonesiaBounds, javaBounds]);
+  }, [javaBounds]);
 
   return (
     <div className="relative w-full h-full rounded-xl overflow-hidden border border-border/50 bg-card shadow-lg">
@@ -192,9 +189,9 @@ const MapClient = ({ data, onRegionSelect, activeLayer, selectedRegion, onPredic
         style={{ height: "100%", width: "100%" }}
         className="rounded-xl z-0"
         zoomControl={false}
-        maxBounds={indonesiaBounds}
+        maxBounds={javaBounds}
         maxBoundsViscosity={1.0}
-        minZoom={5}
+        minZoom={7}
         maxZoom={12}
         ref={(map) => {
           if (map) mapRef.current = map;

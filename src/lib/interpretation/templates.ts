@@ -34,7 +34,6 @@ export function getSignificantFactorTemplate(factor: FactorInterpretation, regio
 
   const varName = variableNames[factor.variable] || factor.variable;
   const arahPengaruh = factor.effect === 'increase' ? 'Positif' : 'Negatif';
-  const tinggiRendah = factor.effect === 'increase' ? 'tinggi' : 'rendah';
   const lebihTinggiRendah = factor.effect === 'increase' ? 'lebih tinggi' : 'lebih rendah';
   
   // Hitung persentase perubahan dari koefisien (exp(β) - 1) * 100
@@ -118,8 +117,8 @@ export function getNonSignificantFactorTemplate(factor: FactorInterpretation, re
 /**
  * Membuat ringkasan interpretasi
  */
-export function generateSummary(interpretation: SimpleInterpretation): string {
-  const { regionName, significantFactors } = interpretation;
+export function generateSummary(): string {
+  // const { regionName, significantFactors } = interpretation;
   
   return `**Ringkasan Diagnosis Spasial:**
 

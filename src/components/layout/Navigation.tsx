@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { AppRoutes } from '@/utils/router';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { Menu, BarChart3, Info, BookOpen, Activity } from 'lucide-react';
+import { Menu, BarChart3, Info, BookOpen, Activity, Home } from 'lucide-react';
 
 interface NavigationItemProps {
   href: string;
@@ -36,6 +36,11 @@ export default function Navigation() {
   const navItems = [
     { 
       href: AppRoutes.HOME, 
+      label: 'Home', 
+      icon: <Home className="w-4 h-4" />
+    },
+    { 
+      href: AppRoutes.DASHBOARD, 
       label: 'Dashboard', 
       icon: <BarChart3 className="w-4 h-4" />
     },
@@ -68,15 +73,26 @@ export default function Navigation() {
           
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center twitter-nav-desktop">
-            {navItems.map(item => (
-              <NavigationItem
-                key={item.href}
-                href={item.href}
-                label={item.label}
-                icon={item.icon}
-                isActive={pathname === item.href}
-              />
-            ))}
+            {navItems.map(item => {
+              let isActive = false;
+              if (item.href === AppRoutes.DASHBOARD) {
+                // Dashboard aktif hanya di halaman dashboard utama
+                isActive = pathname === '/dashboard';
+              } else {
+                // Untuk home, tentang dan metodologi, exact match
+                isActive = pathname === item.href;
+              }
+              
+              return (
+                <NavigationItem
+                  key={item.href}
+                  href={item.href}
+                  label={item.label}
+                  icon={item.icon}
+                  isActive={isActive}
+                />
+              );
+            })}
 
           </div>
           
@@ -96,22 +112,33 @@ export default function Navigation() {
                       Navigation
                     </h3>
                   </div>
-                  {navItems.map(item => (
-                    <Link 
-                      key={item.href}
-                      href={item.href}
-                      className={`twitter-nav-mobile-item ${
-                        pathname === item.href ? 'twitter-nav-mobile-item-active' : ''
-                      }`}
-                      onClick={() => setOpen(false)}
-                    >
-                      <span className="twitter-nav-mobile-icon">
-                        {item.icon}
-                      </span>
-                      <span className="twitter-nav-mobile-label">{item.label}</span>
-                      {pathname === item.href && <div className="twitter-nav-mobile-indicator" />}
-                    </Link>
-                  ))}
+                  {navItems.map(item => {
+                    let isActive = false;
+                    if (item.href === AppRoutes.DASHBOARD) {
+                      // Dashboard aktif hanya di halaman dashboard utama
+                      isActive = pathname === '/dashboard';
+                    } else {
+                      // Untuk home, tentang dan metodologi, exact match
+                      isActive = pathname === item.href;
+                    }
+                    
+                    return (
+                      <Link 
+                        key={item.href}
+                        href={item.href}
+                        className={`twitter-nav-mobile-item ${
+                          isActive ? 'twitter-nav-mobile-item-active' : ''
+                        }`}
+                        onClick={() => setOpen(false)}
+                      >
+                        <span className="twitter-nav-mobile-icon">
+                          {item.icon}
+                        </span>
+                        <span className="twitter-nav-mobile-label">{item.label}</span>
+                        {isActive && <div className="twitter-nav-mobile-indicator" />}
+                      </Link>
+                    );
+                  })}
                 </div>
               </SheetContent>
             </Sheet>

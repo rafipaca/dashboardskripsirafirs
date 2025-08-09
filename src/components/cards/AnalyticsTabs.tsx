@@ -5,18 +5,16 @@ import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { DownloadIcon, ShareIcon, ActivityIcon, TrendingUpIcon, BarChartIcon } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { DownloadIcon, ShareIcon, ActivityIcon, TrendingUpIcon } from "lucide-react";
+// import { Badge } from "@/components/ui/badge";
 import { useChartData, useSpatialAnalysis } from "@/hooks/useResearchData";
-import CorrelationAnalysis from "./CorrelationAnalysis";
-
 // Import new refactored components
-import SummaryStats from "@/components/analytics/SummaryStats";
-import RecommendationsList from "@/components/analytics/RecommendationsList";
 
 // Import prediction components
-import { PredictionCard, EquationCard, InterpretationCard } from "@/components/prediction";
+// import { PredictionCard, EquationCard, InterpretationCard } from "@/components/prediction";
 import { usePrediction } from "@/hooks/usePrediction";
+import { InterpretationCard, InterpretationCardSkeleton } from "@/components/prediction/InterpretationCard";
+import { EquationCard, EquationCardSkeleton } from "@/components/prediction/EquationCard";
 
 interface AnalyticsTabsProps {
   selectedRegion: string | null;
@@ -24,12 +22,12 @@ interface AnalyticsTabsProps {
 
 export default function AnalyticsTabs({ selectedRegion }: AnalyticsTabsProps) {
   // Menggunakan data penelitian yang sebenarnya
-  const { barChartData, pieChartData, lineChartData, summaryStats, loading, error } = useChartData();
+  const { /* barChartData, pieChartData, lineChartData, */ summaryStats, loading, error } = useChartData();
   const { modelEffectiveness } = useSpatialAnalysis();
   
   // Menggunakan hook prediksi untuk fitur baru
   const {
-    globalSummary,
+    // globalSummary,
     isLoading: predictionLoading,
     error: predictionError,
     selectedRegionData,
@@ -44,9 +42,9 @@ export default function AnalyticsTabs({ selectedRegion }: AnalyticsTabsProps) {
   }, [selectedRegion, selectRegion]);
 
   // Menggunakan data yang tersedia dari hooks
-  const barData = barChartData || [];
-  const pieData = pieChartData || [];
-  const lineData = lineChartData || [];
+  // const barData = barChartData || [];
+  // const pieData = pieChartData || [];
+  // const lineData = lineChartData || [];
 
   // Data summary yang sudah difilter berdasarkan wilayah yang dipilih
   const currentSummaryStats = summaryStats || {
@@ -100,88 +98,60 @@ export default function AnalyticsTabs({ selectedRegion }: AnalyticsTabsProps) {
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="overview" className="w-full">
-            <TabsList className="grid w-full grid-cols-6">
+            <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="overview">Ringkasan</TabsTrigger>
               <TabsTrigger value="regions">Wilayah</TabsTrigger>
-              <TabsTrigger value="trends">Tren</TabsTrigger>
-              <TabsTrigger value="correlation">Korelasi</TabsTrigger>
-              <TabsTrigger value="prediction">Prediksi</TabsTrigger>
+              <TabsTrigger value="prediction">Interpretasi</TabsTrigger>
               <TabsTrigger value="equation">Persamaan</TabsTrigger>
             </TabsList>
 
             <TabsContent value="overview" className="space-y-6">
-              <div className="grid gap-6 md:grid-cols-2">
-                {/* Ringkasan Statistik */}
-                <SummaryStats
-                  effectivenessRate={modelEffectiveness?.effectivenessRate}
-                  analyzedCases={currentSummaryStats?.analyzedCases}
-                  studyPeriod={currentSummaryStats?.studyPeriod}
-                  highRiskAreas={currentSummaryStats?.highRiskAreas}
-                />
-
-                {/* Rekomendasi */}
-                <RecommendationsList selectedRegion={selectedRegion} />
+              <div className="grid gap-6 md:grid-cols-1">
+                {/* Ringkasan Statistik - Modified to remove high risk areas */}
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: 0.1 }}
+                >
+                  <Card className="border-0 shadow-md hover:shadow-lg transition-shadow">
+                    <CardHeader>
+                      <CardTitle className="text-lg font-semibold flex items-center gap-2">
+                        <ActivityIcon className="h-5 w-5" />
+                        Ringkasan Analisis GWNBR
+                      </CardTitle>
+                      <CardDescription className="text-sm text-muted-foreground">
+                        Analisis menggunakan model GWNBR untuk kasus pneumonia balita
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="text-center p-4 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg border">
+                          <div className="text-3xl font-bold text-blue-600 mb-2">
+                            {modelEffectiveness?.effectivenessRate?.toFixed(1) || "N/A"}%
+                          </div>
+                          <div className="text-sm font-medium text-blue-800">Efektivitas Model</div>
+                          <div className="text-xs text-blue-600 mt-1">GWNBR</div>
+                        </div>
+                        <div className="text-center p-4 bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg border">
+                          <div className="text-3xl font-bold text-green-600 mb-2">
+                            {currentSummaryStats?.analyzedCases || 0}
+                          </div>
+                          <div className="text-sm font-medium text-green-800">Wilayah Analisis</div>
+                          <div className="text-xs text-green-600 mt-1">
+                            {currentSummaryStats?.studyPeriod || "2019-2022"}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="mt-6 p-4 bg-muted/30 rounded-lg">
+                        <p className="text-sm text-muted-foreground">
+                          <strong>Catatan:</strong> Analisis ini menggunakan model Geographically Weighted Negative Binomial Regression (GWNBR) 
+                          untuk mengidentifikasi pola spasial kasus pneumonia balita di Pulau Jawa.
+                        </p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </motion.div>
               </div>
-              
-              {/* Card Hasil Analisis Model GWNBR */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.2 }}
-              >
-                <Card className="border-0 shadow-md hover:shadow-lg transition-shadow">
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-                    <div className="flex items-center space-x-3">
-                      <div className="p-2 bg-indigo-100 rounded-full">
-                        <BarChartIcon className="h-5 w-5 text-indigo-600" />
-                      </div>
-                      <div>
-                        <CardTitle className="text-lg font-semibold">Hasil Analisis Model GWNBR</CardTitle>
-                        <CardDescription>Evaluasi model berdasarkan data 2019-2022</CardDescription>
-                      </div>
-                    </div>
-                    <Badge variant="outline" className="text-indigo-600 border-indigo-200">
-                      Analisis Retrospektif
-                    </Badge>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div className="text-center p-4 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg border">
-                        <div className="text-3xl font-bold text-blue-600 mb-2">
-                          {modelEffectiveness?.effectivenessRate?.toFixed(1) || "N/A"}%
-                        </div>
-                        <div className="text-sm font-medium text-blue-800">Efektivitas Model</div>
-                        <div className="text-xs text-blue-600 mt-1">GWNBR</div>
-                      </div>
-                      <div className="text-center p-4 bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg border">
-                        <div className="text-3xl font-bold text-green-600 mb-2">
-                          {currentSummaryStats?.analyzedCases || 0}
-                        </div>
-                        <div className="text-sm font-medium text-green-800">Wilayah Analisis</div>
-                        <div className="text-xs text-green-600 mt-1">
-                          {currentSummaryStats?.studyPeriod || "2019-2022"}
-                        </div>
-                      </div>
-                      <div className="text-center p-4 bg-gradient-to-br from-purple-50 to-violet-50 rounded-lg border">
-                        <div className="text-3xl font-bold text-purple-600 mb-2">
-                          {currentSummaryStats?.highRiskAreas || 0}
-                        </div>
-                        <div className="text-sm font-medium text-purple-800">Area Risiko Tinggi</div>
-                        <div className="text-xs text-purple-600 mt-1">Teridentifikasi</div>
-                      </div>
-                    </div>
-                    <div className="mt-6 p-4 bg-muted/30 rounded-lg">
-                      <p className="text-sm text-muted-foreground">
-                        <strong>Catatan:</strong> Analisis ini menggunakan model Geographically Weighted Negative Binomial Regression (GWNBR) 
-                        untuk mengidentifikasi pola spasial kasus pneumonia balita di Pulau Jawa. 
-                        {(currentSummaryStats?.analyzedCases || 0) > 0 && 
-                          `Model menunjukkan efektivitas dalam mengidentifikasi ${currentSummaryStats?.highRiskAreas || 0} area berisiko tinggi 
-                          dari total ${currentSummaryStats?.analyzedCases || 0} wilayah yang dianalisis.`}
-                      </p>
-                    </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
             </TabsContent>
 
             {/* Tab Wilayah */}
@@ -206,26 +176,39 @@ export default function AnalyticsTabs({ selectedRegion }: AnalyticsTabsProps) {
                   <CardContent>
                     {selectedRegion ? (
                       <div className="space-y-4">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                           <div className="p-4 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg border">
                             <div className="text-2xl font-bold text-blue-600 mb-2">
-                              {barData.find(item => item.name === selectedRegion)?.value || "N/A"}
+                              {typeof selectedRegionData?.equation?.coefficients?.intercept === 'number' 
+                                ? selectedRegionData.equation.coefficients.intercept.toFixed(3) 
+                                : "N/A"}
                             </div>
-                            <div className="text-sm font-medium text-blue-800">Kasus Pneumonia</div>
-                            <div className="text-xs text-blue-600 mt-1">Per 1000 balita</div>
+                            <div className="text-sm font-medium text-blue-800">Intercept</div>
+                            <div className="text-xs text-blue-600 mt-1">Koefisien dasar</div>
                           </div>
                           <div className="p-4 bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg border">
                             <div className="text-2xl font-bold text-green-600 mb-2">
-                              {pieData.find(item => item.name === selectedRegion)?.value || "N/A"}
+                              {typeof selectedRegionData?.equation?.coefficients?.sanitasi === 'number' 
+                                ? selectedRegionData.equation.coefficients.sanitasi.toFixed(3) 
+                                : "N/A"}
                             </div>
-                            <div className="text-sm font-medium text-green-800">Indeks Sanitasi</div>
-                            <div className="text-xs text-green-600 mt-1">Skor 0-100</div>
+                            <div className="text-sm font-medium text-green-800">Koef. Sanitasi</div>
+                            <div className="text-xs text-green-600 mt-1">Pengaruh sanitasi</div>
+                          </div>
+                          <div className="p-4 bg-gradient-to-br from-purple-50 to-violet-50 rounded-lg border">
+                            <div className="text-2xl font-bold text-purple-600 mb-2">
+                              {typeof selectedRegionData?.equation?.coefficients?.kepadatan === 'number' 
+                                ? selectedRegionData.equation.coefficients.kepadatan.toFixed(3) 
+                                : "N/A"}
+                            </div>
+                            <div className="text-sm font-medium text-purple-800">Koef. Kepadatan</div>
+                            <div className="text-xs text-purple-600 mt-1">Pengaruh kepadatan</div>
                           </div>
                         </div>
                         <div className="p-4 bg-muted/30 rounded-lg">
                           <p className="text-sm text-muted-foreground">
-                            <strong>Analisis Wilayah:</strong> Data menunjukkan karakteristik spesifik untuk wilayah {selectedRegion}. 
-                            Gunakan informasi ini untuk memahami pola lokal dan faktor risiko yang dominan di area tersebut.
+                            <strong>Analisis Wilayah:</strong> Data menunjukkan koefisien model GWNBR untuk wilayah {selectedRegion}. 
+                            Koefisien ini menggambarkan pengaruh lokal dari setiap variabel terhadap kasus pneumonia balita di area tersebut.
                           </p>
                         </div>
                       </div>
@@ -242,142 +225,60 @@ export default function AnalyticsTabs({ selectedRegion }: AnalyticsTabsProps) {
               </motion.div>
             </TabsContent>
 
-            {/* Tab Tren */}
-            <TabsContent value="trends" className="space-y-6">
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.1 }}
-              >
-                <Card className="border-0 shadow-md hover:shadow-lg transition-shadow">
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-                    <div>
-                      <CardTitle className="text-lg font-semibold">Analisis Tren Temporal</CardTitle>
-                      <CardDescription className="text-sm text-muted-foreground">Perkembangan kasus pneumonia balita dari waktu ke waktu</CardDescription>
-                    </div>
-                    <div className="p-2 bg-orange-100 rounded-full">
-                      <TrendingUpIcon className="h-5 w-5 text-orange-600" />
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-6">
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div className="text-center p-4 bg-gradient-to-br from-orange-50 to-red-50 rounded-lg border">
-                          <div className="text-2xl font-bold text-orange-600 mb-2">
-                            {lineData.length > 0 ? (
-                              lineData[lineData.length - 1]?.value !== undefined 
-                                ? String(lineData[lineData.length - 1].value) 
-                                : "N/A"
-                            ) : "N/A"}
-                          </div>
-                          <div className="text-sm font-medium text-orange-800">Kasus Terbaru</div>
-                          <div className="text-xs text-orange-600 mt-1">2022</div>
-                        </div>
-                        <div className="text-center p-4 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg border">
-                          <div className="text-2xl font-bold text-blue-600 mb-2">
-                            {lineData.length > 0 ? (
-                              lineData[lineData.length - 1]?.value !== undefined && 
-                              lineData[0]?.value !== undefined &&
-                              lineData[0]?.value !== 0
-                                ? `${((Number(lineData[lineData.length - 1].value) - Number(lineData[0].value)) / Number(lineData[0].value) * 100).toFixed(1)}%`
-                                : "N/A"
-                            ) : "N/A"}
-                          </div>
-                          <div className="text-sm font-medium text-blue-800">Perubahan</div>
-                          <div className="text-xs text-blue-600 mt-1">2019-2022</div>
-                        </div>
-                        <div className="text-center p-4 bg-gradient-to-br from-purple-50 to-violet-50 rounded-lg border">
-                          <div className="text-2xl font-bold text-purple-600 mb-2">
-                            4
-                          </div>
-                          <div className="text-sm font-medium text-purple-800">Tahun Analisis</div>
-                          <div className="text-xs text-purple-600 mt-1">2019-2022</div>
-                        </div>
-                      </div>
-                      <div className="p-4 bg-muted/30 rounded-lg">
-                        <p className="text-sm text-muted-foreground">
-                          <strong>Tren Temporal:</strong> Analisis menunjukkan perkembangan kasus pneumonia balita selama periode 2019-2022. 
-                          Data ini membantu mengidentifikasi pola musiman dan tren jangka panjang yang dapat digunakan untuk prediksi dan perencanaan intervensi.
-                        </p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            </TabsContent>
 
-            {/* Tab Korelasi */}
-            <TabsContent value="correlation" className="space-y-6">
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.1 }}
-              >
-                <Card className="border-0 shadow-md hover:shadow-lg transition-shadow">
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-                    <div>
-                      <CardTitle className="text-lg font-semibold">Analisis Korelasi Faktor Risiko</CardTitle>
-                      <CardDescription className="text-sm text-muted-foreground">Hubungan antar variabel berdasarkan data GWNBR</CardDescription>
-                    </div>
-                    <div className="p-2 bg-purple-100 rounded-full">
-                      <ActivityIcon className="h-5 w-5 text-purple-600" />
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <CorrelationAnalysis />
-                  </CardContent>
-                </Card>
-              </motion.div>
-            </TabsContent>
 
-            {/* Tab Prediksi */}
+            {/* Tab Interpretasi */}
             <TabsContent value="prediction" className="space-y-4">
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold">Interpretasi Hasil</h3>
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.1 }}
+              >
                 {predictionLoading ? (
-                  <div className="text-center py-8">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-                    <p className="mt-2 text-sm text-gray-600">Memuat interpretasi...</p>
-                  </div>
+                  <InterpretationCardSkeleton />
                 ) : predictionError ? (
-                  <div className="text-center py-8 text-red-600">
-                    <p>Error: {predictionError}</p>
-                  </div>
+                  <Card className="border-0 shadow-md">
+                    <CardContent className="text-center py-8 text-red-600">
+                      <p>Error: {predictionError}</p>
+                    </CardContent>
+                  </Card>
                 ) : selectedRegionData?.equation ? (
-                  <InterpretationCard 
-                    equation={selectedRegionData.equation} 
-                  />
+                  <InterpretationCard equation={selectedRegionData.equation} />
                 ) : (
-                  <div className="text-center py-8 text-gray-500">
-                    <p>Pilih wilayah untuk melihat interpretasi</p>
-                  </div>
+                  <Card className="border-0 shadow-md">
+                    <CardContent className="text-center py-8 text-gray-500">
+                      <p>Pilih wilayah pada peta untuk melihat interpretasi hasil model</p>
+                    </CardContent>
+                  </Card>
                 )}
-              </div>
+              </motion.div>
             </TabsContent>
             
             {/* Tab Persamaan */}
             <TabsContent value="equation" className="space-y-4">
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold">Persamaan Model GWNBR</h3>
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.1 }}
+              >
                 {predictionLoading ? (
-                  <div className="text-center py-8">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-                    <p className="mt-2 text-sm text-gray-600">Memuat persamaan...</p>
-                  </div>
+                  <EquationCardSkeleton />
                 ) : predictionError ? (
-                  <div className="text-center py-8 text-red-600">
-                    <p>Error: {predictionError}</p>
-                  </div>
+                  <Card className="border-0 shadow-md">
+                    <CardContent className="text-center py-8 text-red-600">
+                      <p>Error: {predictionError}</p>
+                    </CardContent>
+                  </Card>
                 ) : selectedRegionData?.equation ? (
-                  <EquationCard 
-                    equation={selectedRegionData.equation} 
-                  />
+                  <EquationCard equation={selectedRegionData.equation} />
                 ) : (
-                  <div className="text-center py-8 text-gray-500">
-                    <p>Pilih wilayah pada peta untuk melihat persamaan model</p>
-                  </div>
+                  <Card className="border-0 shadow-md">
+                    <CardContent className="text-center py-8 text-gray-500">
+                      <p>Pilih wilayah pada peta untuk melihat persamaan model</p>
+                    </CardContent>
+                  </Card>
                 )}
-              </div>
+              </motion.div>
             </TabsContent>
           </Tabs>
         </CardContent>

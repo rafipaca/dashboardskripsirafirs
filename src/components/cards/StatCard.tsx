@@ -170,7 +170,7 @@ export function RegionDataCard({ regions, showDetails = false, filterType = 'all
     if (!rawData.length) return [];
     
     const avgCases = rawData.reduce((sum, r) => sum + r.Penemuan, 0) / rawData.length;
-    const avgSanitasi = rawData.reduce((sum, r) => sum + r.Sanitasi, 0) / rawData.length;
+    // const avgSanitasi = rawData.reduce((sum, r) => sum + r.Sanitasi, 0) / rawData.length;
     
     let filteredData = rawData;
     
@@ -180,7 +180,7 @@ export function RegionDataCard({ regions, showDetails = false, filterType = 'all
         filteredData = rawData.filter(item => item.Penemuan > avgCases * 1.5);
         break;
       case 'low-sanitation':
-        filteredData = rawData.filter(item => item.Sanitasi < avgSanitasi);
+        filteredData = rawData.filter(item => item.Sanitasi < 70); // threshold tetap untuk sanitasi rendah
         break;
       default:
         filteredData = rawData.slice(0, 10);

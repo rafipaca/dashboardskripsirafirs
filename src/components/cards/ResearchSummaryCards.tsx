@@ -3,10 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { 
   MapPinIcon, 
-  BarChartIcon, 
   UsersIcon, 
-  AlertTriangleIcon, 
-  ActivityIcon,
   CheckCircleIcon,
   XCircleIcon
 } from "lucide-react";
@@ -128,14 +125,15 @@ export default function ResearchSummaryCards() {
   const totalRegions = rawData.length;
   const totalProvinces = new Set(rawData.map(item => getProvinceFromName(item.NAMOBJ))).size;
   const totalCases = rawData.reduce((sum, item) => sum + item.Penemuan, 0);
-  const avgCases = totalCases / totalRegions;
-  const highRiskRegions = rawData.filter(item => item.Penemuan > avgCases * 2).length;
-  const significantVariables = rawData.length > 0 
-    ? new Set(rawData.map(item => item.VariabelSignifikan).filter(v => v && v !== '').join(',').split(',').map(v => v.trim())).size
-    : 0;
-  const avgSanitasi = rawData.length > 0 
-    ? Math.round((rawData.reduce((sum, item) => sum + item.Sanitasi, 0) / rawData.length) * 10) / 10
-    : 0;
+  // const avgCases = totalCases / totalRegions;
+  // Variabel untuk analisis lanjutan jika diperlukan
+  // const highRiskRegions = rawData.filter(item => item.Penemuan > avgCases * 2).length;
+  // const significantVariables = rawData.length > 0 
+  //   ? new Set(rawData.map(item => item.VariabelSignifikan).filter(v => v && v !== '').join(',').split(',').map(v => v.trim())).size
+  //   : 0;
+  // const avgSanitasi = rawData.length > 0 
+  //   ? Math.round((rawData.reduce((sum, item) => sum + item.Sanitasi, 0) / rawData.length) * 10) / 10
+  //   : 0;
 
   const summaryData = [
     {
@@ -158,33 +156,6 @@ export default function ResearchSummaryCards() {
       description: "Kasus pneumonia balita",
       icon: <UsersIcon className="h-4 w-4" />,
       variant: "default" as "default" | "success" | "warning" | "error"
-    },
-    {
-      title: "Risiko Tinggi",
-      value: highRiskRegions,
-      description: "Wilayah berisiko",
-      icon: <AlertTriangleIcon className="h-4 w-4" />,
-      variant: highRiskRegions > totalRegions * 0.3 ? "warning" : "success" as "default" | "success" | "warning" | "error",
-      showProgress: true,
-      progressValue: highRiskRegions,
-      maxValue: totalRegions
-    },
-    {
-      title: "Variabel Model",
-      value: significantVariables,
-      description: "Variabel signifikan",
-      icon: <BarChartIcon className="h-4 w-4" />,
-      variant: "default" as "default" | "success" | "warning" | "error"
-    },
-    {
-      title: "Sanitasi",
-      value: `${avgSanitasi}%`,
-      description: "Rata-rata wilayah",
-      icon: <ActivityIcon className="h-4 w-4" />,
-      variant: avgSanitasi > 80 ? "success" : avgSanitasi > 60 ? "warning" : "error" as "default" | "success" | "warning" | "error",
-      showProgress: true,
-      progressValue: avgSanitasi,
-      maxValue: 100
     }
   ];
 
