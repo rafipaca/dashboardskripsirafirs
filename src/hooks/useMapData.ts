@@ -148,6 +148,25 @@ export const useMapData = () => {
   const formatValue = (value: unknown) => (value !== undefined && value !== null && typeof value === 'number') ? value.toLocaleString() : 'N/A';
   const formatInt = (value: unknown) => (value !== undefined && value !== null && typeof value === 'number') ? Math.round(value).toLocaleString() : 'N/A';
 
+      // Map X-codes to descriptive labels for display
+      const variableNameMap: Record<string, string> = {
+        X1: 'Gizi Kurang',
+        X2: 'IMD',
+        X3: 'Rokok per Kapita',
+        X4: 'Kepadatan Penduduk',
+        X5: 'Air Minum Layak',
+        X6: 'Sanitasi',
+      };
+
+      const formattedVars = (regionData.VariabelSignifikan || '')
+        .toString()
+        .replace(/"/g, '')
+        .split(',')
+        .map(s => s.trim())
+        .filter(Boolean)
+        .map(code => variableNameMap[code] || code)
+        .join(', ');
+
       return `
         <div style="font-family: Arial, sans-serif; font-size: 14px; min-width: 250px;">
           <strong style="font-size: 16px; color: #333;">${regionNameFromFeature}</strong>
@@ -161,7 +180,7 @@ export const useMapData = () => {
           <p><strong>Air Minum Layak:</strong> ${formatValue(regionData.AirMinumLayak)}%</p>
           <hr style="margin: 4px 0;"/>
           <strong style="color: #b91c1c;">Variabel Signifikan:</strong>
-          <p>${regionData.VariabelSignifikan?.replace(/"/g, '') || 'Tidak ada'}</p>
+          <p>${formattedVars || 'Tidak ada'}</p>
         </div>
       `;
     },
@@ -202,5 +221,7 @@ export const useMapData = () => {
     generateTooltipContent,
   generateModelEquation,
   findRegionData,
+  // Invalidate map styles when data becomes ready or when dataset size changes
+  styleVersion: useMemo(() => (loading ? 0 : (researchData?.length || 0)), [loading, researchData]),
   };
 };

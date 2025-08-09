@@ -11,12 +11,12 @@ interface MapLegendProps {
 const significanceLegend = {
   title: 'Legenda Signifikansi Variabel',
   items: [
-    { label: 'Signifikan (X1, X3, X4)', color: '#b91c1c' },
-    { label: 'Signifikan (X1, X4)', color: '#581c87' },
-    { label: 'Signifikan (X3, X4)', color: '#166534' },
-    { label: 'Signifikan (X1)', color: '#facc15' },
-    { label: 'Signifikan (X3)', color: '#2563eb' },
-    { label: 'Signifikan (X4)', color: '#9333ea' },
+  { label: 'Gizi Kurang, Rokok per Kapita, Kepadatan Penduduk', color: '#b91c1c' },
+  { label: 'Gizi Kurang, Kepadatan Penduduk', color: '#581c87' },
+  { label: 'Rokok per Kapita, Kepadatan Penduduk', color: '#166534' },
+  { label: 'Gizi Kurang', color: '#facc15' },
+  { label: 'Rokok per Kapita', color: '#2563eb' },
+  { label: 'Kepadatan Penduduk', color: '#9333ea' },
     { label: 'Tidak Signifikan / Lainnya', color: '#B0B0B0' },
   ]
 };

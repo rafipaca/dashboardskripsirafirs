@@ -46,12 +46,12 @@ function MapLegendContent({ activeLayer }: { activeLayer: string }) {
   const significanceLegend = {
     title: 'Legenda Signifikansi Variabel',
     items: [
-      { label: 'Signifikan (X1, X3, X4)', color: '#b91c1c' },
-      { label: 'Signifikan (X1, X4)', color: '#581c87' },
-      { label: 'Signifikan (X3, X4)', color: '#166534' },
-      { label: 'Signifikan (X1)', color: '#facc15' },
-      { label: 'Signifikan (X3)', color: '#2563eb' },
-      { label: 'Signifikan (X4)', color: '#9333ea' },
+  { label: 'Gizi Kurang, Rokok per Kapita, Kepadatan Penduduk', color: '#b91c1c' },
+  { label: 'Gizi Kurang, Kepadatan Penduduk', color: '#581c87' },
+  { label: 'Rokok per Kapita, Kepadatan Penduduk', color: '#166534' },
+  { label: 'Gizi Kurang', color: '#facc15' },
+  { label: 'Rokok per Kapita', color: '#2563eb' },
+  { label: 'Kepadatan Penduduk', color: '#9333ea' },
       { label: 'Tidak Signifikan / Lainnya', color: '#B0B0B0' },
     ]
   };
@@ -116,7 +116,7 @@ function MapLegendContent({ activeLayer }: { activeLayer: string }) {
 export default function MapCard({ geojsonData, isLoading, error, onRetry, onRegionSelect, onPredictionSelect }: MapCardProps) {
   const [activeLayer, setActiveLayer] = useState('significance');
   const [selectedRegionName, setSelectedRegionName] = useState('');
-  const { generateModelEquation } = useMapData();
+  const { generateModelEquation, styleVersion } = useMapData();
 
   const { provinces: availableProvinces, regionsByProvince, loading: wilayahLoading, error: wilayahError } = useWilayahData();
 
@@ -172,6 +172,7 @@ export default function MapCard({ geojsonData, isLoading, error, onRetry, onRegi
       return (
         <Suspense fallback={<MapLoadingState />}>
           <MapClient 
+            key={`map-${styleVersion}-${activeLayer}-${geojsonData?.features?.length ?? 0}`}
             data={geojsonData} 
             onRegionSelect={handleRegionSelect}
             activeLayer={activeLayer} 

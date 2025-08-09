@@ -14,6 +14,7 @@ export interface UseGeojsonDataReturn {
   isLoading: boolean;
   error: string | null;
   refetch: () => void;
+  dataVersion?: number;
 }
 
 // Daftar provinsi di Pulau Jawa
@@ -59,6 +60,7 @@ export const useGeojsonData = ({
   const [data, setData] = useState<FeatureCollection | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [dataVersion, setDataVersion] = useState(0);
 
   const fetchData = useCallback(async () => {
     setIsLoading(true);
@@ -83,6 +85,7 @@ export const useGeojsonData = ({
       }
 
       setData(filteredData);
+  setDataVersion(v => v + 1);
     } catch (err: unknown) {
       const errorMessage = (err instanceof Error ? err.message : String(err)) || "Terjadi kesalahan yang tidak diketahui saat memuat data.";
       console.error("Gagal memuat GeoJSON:", errorMessage);
@@ -105,5 +108,6 @@ export const useGeojsonData = ({
     isLoading,
     error,
     refetch,
+  dataVersion,
   };
 };

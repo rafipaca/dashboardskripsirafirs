@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import { MapContainer, TileLayer, GeoJSON, ZoomControl, LayersControl } from "react-leaflet";
 import { FeatureCollection } from "geojson";
-import L from "leaflet";
+import L, { type PathOptions } from "leaflet";
 import { useMapData } from "@/hooks/useMapData";
 
 // Import styles
@@ -24,7 +24,7 @@ const MapClient = ({ data, onRegionSelect, activeLayer, selectedRegion, onPredic
   const mapRef = useRef<L.Map | null>(null);
   const geoJsonRef = useRef<L.GeoJSON | null>(null);
   
-  const { getFeatureStyle, generateTooltipContent } = useMapData();
+  const { getFeatureStyle, generateTooltipContent, styleVersion } = useMapData();
 
   // Define tighter bounds for Java Island to restrict zoom out area
   const javaBounds: L.LatLngBoundsExpression = useMemo(() => [
@@ -105,83 +105,32 @@ const MapClient = ({ data, onRegionSelect, activeLayer, selectedRegion, onPredic
     });
   };
 
-  // Initialize map and add legend
+  // Initialize map bounds (no custom legend)
   useEffect(() => {
     if (!mapRef.current) return;
-
-    // Create modern Twitter-style legend
-    const legendContainer = document.createElement('div');
-    legendContainer.className = 'leaflet-control info legend leaflet-control-custom';
-    legendContainer.style.cssText = `
-      padding: 16px;
-      background: rgba(255, 255, 255, 0.95);
-      backdrop-filter: blur(12px);
-      border: 1px solid rgba(0, 0, 0, 0.08);
-      border-radius: 16px;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
-      font-size: 13px;
-      line-height: 1.5;
-      max-width: 180px;
-      transition: all 0.2s ease;
-    `;
-    
-    legendContainer.innerHTML = `
-      <div style="font-size: 14px; font-weight: 700; margin-bottom: 12px; color: #0f1419;">Risk Level</div>
-      <div style="display: flex; align-items: center; margin-bottom: 8px; padding: 4px 0;">
-        <div style="background: linear-gradient(135deg, #ef4444, #dc2626); width: 16px; height: 16px; margin-right: 10px; border-radius: 4px; box-shadow: 0 2px 4px rgba(239, 68, 68, 0.3);"></div>
-        <span style="font-size: 13px; font-weight: 500; color: #536471;">High Risk</span>
-      </div>
-      <div style="display: flex; align-items: center; margin-bottom: 8px; padding: 4px 0;">
-        <div style="background: linear-gradient(135deg, #f97316, #ea580c); width: 16px; height: 16px; margin-right: 10px; border-radius: 4px; box-shadow: 0 2px 4px rgba(249, 115, 22, 0.3);"></div>
-        <span style="font-size: 13px; font-weight: 500; color: #536471;">Medium-High</span>
-      </div>
-      <div style="display: flex; align-items: center; margin-bottom: 8px; padding: 4px 0;">
-        <div style="background: linear-gradient(135deg, #fbbf24, #f59e0b); width: 16px; height: 16px; margin-right: 10px; border-radius: 4px; box-shadow: 0 2px 4px rgba(251, 191, 36, 0.3);"></div>
-        <span style="font-size: 13px; font-weight: 500; color: #536471;">Medium</span>
-      </div>
-      <div style="display: flex; align-items: center; margin-bottom: 8px; padding: 4px 0;">
-        <div style="background: linear-gradient(135deg, #22c55e, #16a34a); width: 16px; height: 16px; margin-right: 10px; border-radius: 4px; box-shadow: 0 2px 4px rgba(34, 197, 94, 0.3);"></div>
-        <span style="font-size: 13px; font-weight: 500; color: #536471;">Low Risk</span>
-      </div>
-      <div style="display: flex; align-items: center; padding: 4px 0;">
-        <div style="background: linear-gradient(135deg, #60a5fa, #3b82f6); width: 16px; height: 16px; margin-right: 10px; border-radius: 4px; box-shadow: 0 2px 4px rgba(96, 165, 250, 0.3);"></div>
-        <span style="font-size: 13px; font-weight: 500; color: #536471;">Unknown</span>
-      </div>
-    `;
-    
-    // Add hover effect to legend
-    legendContainer.addEventListener('mouseenter', () => {
-      legendContainer.style.transform = 'translateY(-2px)';
-      legendContainer.style.boxShadow = '0 12px 40px rgba(0, 0, 0, 0.15)';
-    });
-    
-    legendContainer.addEventListener('mouseleave', () => {
-      legendContainer.style.transform = 'translateY(0)';
-      legendContainer.style.boxShadow = '0 8px 32px rgba(0, 0, 0, 0.12)';
-    });
-    
-    // Get the map container and append the legend
-    const mapContainer = mapRef.current.getContainer();
-    mapContainer.appendChild(legendContainer);
-    
-    // Apply bounds restrictions with smooth animation
     mapRef.current.setMaxBounds(javaBounds);
     mapRef.current.setMinZoom(7);
     mapRef.current.setMaxZoom(12);
     mapRef.current.fitBounds(javaBounds);
-    
-    // Clean up function
-    return () => {
-      if (mapContainer && legendContainer) {
-        try {
-          mapContainer.removeChild(legendContainer);
-        } catch (e) {
-          console.error('Error removing legend:', e);
-        }
-      }
-    };
   }, [javaBounds]);
+
+  // Refresh styles when data becomes ready or layer changes
+  useEffect(() => {
+    if (!geoJsonRef.current) return;
+    try {
+      geoJsonRef.current.eachLayer((layer: L.Layer) => {
+        const candidate = layer as L.Layer & { feature?: GeoJSON.Feature };
+        const feature = candidate.feature;
+        if (feature && (layer as L.Path).setStyle) {
+          const pathLayer = layer as L.Path;
+          const nextStyle = getFeatureStyle(feature, activeLayer) as PathOptions;
+          pathLayer.setStyle(nextStyle);
+        }
+      });
+    } catch {
+      // no-op: safe guard for any leaflet internals
+    }
+  }, [styleVersion, activeLayer, getFeatureStyle]);
 
   return (
     <div className="relative w-full h-full rounded-xl overflow-hidden border border-border/50 bg-card shadow-lg">
@@ -220,9 +169,9 @@ const MapClient = ({ data, onRegionSelect, activeLayer, selectedRegion, onPredic
         </LayersControl>
         
         {/* Enhanced GeoJSON with Twitter-style interactions */}
-        {data && (
+    {data && (
           <GeoJSON 
-            key={`${activeLayer}-${selectedRegion || 'initial'}`}
+      key={`${activeLayer}-${styleVersion}-${data.features.length}-${selectedRegion || 'initial'}`}
             data={data} 
             style={(feature) => {
               const baseStyle = feature ? getFeatureStyle(feature, activeLayer) : { weight: 1, fillOpacity: 0.7 };
