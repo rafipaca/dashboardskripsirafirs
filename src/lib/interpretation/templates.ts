@@ -100,7 +100,7 @@ export function getNonSignificantFactorTemplate(factor: FactorInterpretation, re
   } else if (factor.variable === 'kepadatan') {
     topikVariabel = 'pengelolaan kepadatan penduduk';
   } else if (factor.variable === 'airMinum') {
-    topikVariabel = 'akses sanitasi';
+    topikVariabel = 'akses air minum';
   } else if (factor.variable === 'sanitasi') {
     topikVariabel = 'akses sanitasi';
   } else {
@@ -117,12 +117,46 @@ export function getNonSignificantFactorTemplate(factor: FactorInterpretation, re
 /**
  * Membuat ringkasan interpretasi
  */
-export function generateSummary(): string {
-  // const { regionName, significantFactors } = interpretation;
-  
-  return `**Ringkasan Diagnosis Spasial:**
+export function generateSummary(interpretation: SimpleInterpretation): string {
+  const { regionName, significantFactors, dominantFactor } = interpretation;
 
-Berdasarkan analisis Geographically Weighted Negative Binomial Regression (GWNBR), model ini mengidentifikasi faktor-faktor berikut memiliki asosiasi statistik yang paling kuat dengan jumlah kasus pneumonia di wilayah ini.`;
+  // Helper to get readable variable name
+  const getVarName = (variable: string): string => {
+    const names: Record<string, string> = {
+      'giziKurang': 'Gizi Kurang',
+      'imd': 'Inisiasi Menyusu Dini (IMD)',
+      'rokokPerkapita': 'Konsumsi Rokok Per Kapita',
+      'kepadatan': 'Kepadatan Penduduk',
+      'airMinum': 'Akses Air Minum Layak',
+      'sanitasi': 'Akses Sanitasi Layak'
+    };
+    return names[variable] || variable;
+  };
+
+  if (significantFactors.length === 0) {
+    return `Ringkasan Diagnosis Spasial — Di ${regionName}, tidak ada faktor yang menunjukkan pengaruh signifikan terhadap kasus pneumonia balita dalam model ini. Pertimbangkan analisis tambahan atau sumber data lain untuk menelusuri faktor risiko lokal.`;
+  }
+
+  const risk = significantFactors.filter(f => f.effect === 'increase');
+  const protective = significantFactors.filter(f => f.effect === 'decrease');
+
+  let text = `Ringkasan Diagnosis Spasial — Di ${regionName}, terdapat ${significantFactors.length} faktor yang berpengaruh signifikan terhadap kasus pneumonia balita. `;
+
+  if (dominantFactor) {
+    const pct = ((Math.exp(dominantFactor.coefficient) - 1) * 100).toFixed(1);
+    text += `Faktor dominan adalah ${getVarName(dominantFactor.variable)} yang ` +
+            `${dominantFactor.effect === 'increase' ? 'meningkatkan' : 'menurunkan'} risiko (β = ${dominantFactor.coefficient.toFixed(4)}, ≈ ${pct}%). `;
+  }
+
+  if (risk.length > 0) {
+    text += `Faktor risiko utama: ${risk.map(f => getVarName(f.variable)).join(', ')}. `;
+  }
+
+  if (protective.length > 0) {
+    text += `Faktor protektif: ${protective.map(f => getVarName(f.variable)).join(', ')}.`;
+  }
+
+  return text.trim();
 }
 
 /**

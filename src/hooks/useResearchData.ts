@@ -201,8 +201,8 @@ export function useChartData() {
     // Mengambil 3 wilayah teratas
     const topThreeRegions = dashboardData.topRegions.slice(0, 3);
     
-    // Membuat data tren berdasarkan variasi faktor risiko
-    const quarters = ['Q1 2019', 'Q2 2020', 'Q3 2021', 'Q4 2022'];
+  // Membuat data tren berdasarkan variasi faktor risiko (simulasi dalam tahun 2023)
+  const quarters = ['Q1 2023', 'Q2 2023', 'Q3 2023', 'Q4 2023'];
     
     return quarters.map((quarter, index) => {
       const quarterData: Record<string, unknown> = { name: quarter };

@@ -32,7 +32,7 @@ export default function MethodologyPage() {
             <div className="about-card-content">
               <p className="about-text">
                 Penelitian ini menggunakan model Geographically Weighted Negative Binomial Regression (GWNBR)
-                untuk menganalisis pola spasial dari kasus pneumonia balita di Pulau Jawa tahun 2022. 
+                untuk menganalisis pola spasial dari kasus pneumonia balita di Pulau Jawa tahun 2023. 
                 Analisis dilakukan pada tingkat kabupaten/kota dengan mempertimbangkan heterogenitas spasial.
               </p>
             </div>
@@ -145,7 +145,7 @@ export default function MethodologyPage() {
               <div className="about-dataset-card">
                 <h3 className="about-dataset-title">Variabel Dependen (Y)</h3>
                 <p className="about-text">
-                  <strong>Jumlah kasus pneumonia balita</strong> di 119 kabupaten/kota di Pulau Jawa tahun 2022.
+                  <strong>Jumlah kasus pneumonia balita</strong> di 119 kabupaten/kota di Pulau Jawa tahun 2023.
                   Data berupa variabel cacah (count data) yang menunjukkan frekuensi kejadian pneumonia pada balita.
                 </p>
               </div>
@@ -194,9 +194,9 @@ export default function MethodologyPage() {
                 Data yang digunakan dalam penelitian ini berasal dari:
               </p>
               <ul className="about-list">
-                <li><strong>Data Kesehatan:</strong> Profil Kesehatan Indonesia, Kementerian Kesehatan RI (2022)</li>
-                <li><strong>Data Demografi dan Sosial:</strong> Survei Sosial Ekonomi Nasional (Susenas), BPS (2022)</li>
-                <li><strong>Data Sanitasi dan Air Bersih:</strong> Statistik Kesejahteraan Rakyat, BPS (2022)</li>
+                <li><strong>Data Kesehatan:</strong> Profil Kesehatan Indonesia, Kementerian Kesehatan RI (2023)</li>
+                <li><strong>Data Demografi dan Sosial:</strong> Survei Sosial Ekonomi Nasional (Susenas), BPS (2023)</li>
+                <li><strong>Data Sanitasi dan Air Bersih:</strong> Statistik Kesejahteraan Rakyat, BPS (2023)</li>
                 <li><strong>Data Spasial:</strong> Batas administrasi kabupaten/kota, Geoportal Indonesia</li>
               </ul>
             </div>

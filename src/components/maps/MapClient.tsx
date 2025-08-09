@@ -82,9 +82,9 @@ const MapClient = ({ data, onRegionSelect, activeLayer, selectedRegion, onPredic
         const regionName = properties?.NAMOBJ || properties?.WADMKK || properties?.NAME_2 || "Unknown";
         
         // If clicking the same region, deselect it. Otherwise, select the new one.
-        const newSelectedRegion = internalSelectedRegion === regionName ? null : regionName;
-        setSelectedRegion(newSelectedRegion);
-        onRegionSelect?.(newSelectedRegion || '');
+  const newSelectedRegion = internalSelectedRegion === regionName ? null : regionName;
+  setSelectedRegion(newSelectedRegion);
+  onRegionSelect?.(newSelectedRegion);
         
         if (onPredictionSelect) {
           onPredictionSelect(newSelectedRegion);

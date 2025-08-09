@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { DownloadIcon, ShareIcon, ActivityIcon, TrendingUpIcon } from "lucide-react";
 // import { Badge } from "@/components/ui/badge";
-import { useChartData, useSpatialAnalysis } from "@/hooks/useResearchData";
+import { useChartData, useSpatialAnalysis, useResearchData } from "@/hooks/useResearchData";
 // Import new refactored components
 
 // Import prediction components
@@ -24,6 +24,7 @@ export default function AnalyticsTabs({ selectedRegion }: AnalyticsTabsProps) {
   // Menggunakan data penelitian yang sebenarnya
   const { /* barChartData, pieChartData, lineChartData, */ summaryStats, loading, error } = useChartData();
   const { modelEffectiveness } = useSpatialAnalysis();
+  const { getRegionData } = useResearchData();
   
   // Menggunakan hook prediksi untuk fitur baru
   const {
@@ -36,8 +37,11 @@ export default function AnalyticsTabs({ selectedRegion }: AnalyticsTabsProps) {
   
   // Update selected region di prediction hook ketika selectedRegion berubah
   useEffect(() => {
+    // Propagate selection changes (including clearing selection)
     if (selectedRegion) {
       selectRegion(selectedRegion);
+    } else {
+      selectRegion(null);
     }
   }, [selectedRegion, selectRegion]);
 
@@ -49,10 +53,17 @@ export default function AnalyticsTabs({ selectedRegion }: AnalyticsTabsProps) {
   // Data summary yang sudah difilter berdasarkan wilayah yang dipilih
   const currentSummaryStats = summaryStats || {
     analyzedCases: 118,
-    studyPeriod: "2019-2022",
+    studyPeriod: "2023",
     highRiskAreas: 34,
     totalRegions: 118
   };
+
+  // Regional raw data for the selected region
+  const regionData = selectedRegion ? getRegionData(selectedRegion) : null;
+  const nfID = (opts?: Intl.NumberFormatOptions) => new Intl.NumberFormat('id-ID', opts);
+  const formatNum = (val?: number | null) => (typeof val === 'number' ? nfID().format(val) : 'N/A');
+  const formatPct = (val?: number | null, digits: number = 2) =>
+    (typeof val === 'number' ? `${nfID({ minimumFractionDigits: digits, maximumFractionDigits: digits }).format(val)}%` : 'N/A');
 
   if (loading) {
     return (
@@ -138,7 +149,7 @@ export default function AnalyticsTabs({ selectedRegion }: AnalyticsTabsProps) {
                           </div>
                           <div className="text-sm font-medium text-green-800">Wilayah Analisis</div>
                           <div className="text-xs text-green-600 mt-1">
-                            {currentSummaryStats?.studyPeriod || "2019-2022"}
+                            {currentSummaryStats?.studyPeriod || "2023"}
                           </div>
                         </div>
                       </div>
@@ -175,43 +186,50 @@ export default function AnalyticsTabs({ selectedRegion }: AnalyticsTabsProps) {
                   </CardHeader>
                   <CardContent>
                     {selectedRegion ? (
-                      <div className="space-y-4">
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                          <div className="p-4 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg border">
-                            <div className="text-2xl font-bold text-blue-600 mb-2">
-                              {typeof selectedRegionData?.equation?.coefficients?.intercept === 'number' 
-                                ? selectedRegionData.equation.coefficients.intercept.toFixed(3) 
-                                : "N/A"}
+                      regionData ? (
+                        <div className="space-y-4">
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div className="p-4 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg border">
+                              <div className="text-sm font-medium text-blue-800">Kasus Pneumonia</div>
+                              <div className="text-2xl font-bold text-blue-600">{formatNum(regionData.Penemuan)}</div>
                             </div>
-                            <div className="text-sm font-medium text-blue-800">Intercept</div>
-                            <div className="text-xs text-blue-600 mt-1">Koefisien dasar</div>
+                            <div className="p-4 bg-gradient-to-br from-emerald-50 to-green-50 rounded-lg border">
+                              <div className="text-sm font-medium text-emerald-800">Gizi Kurang</div>
+                              <div className="text-2xl font-bold text-emerald-600">{formatPct(regionData.GiziKurang, 3)}</div>
+                            </div>
+                            <div className="p-4 bg-gradient-to-br from-cyan-50 to-sky-50 rounded-lg border">
+                              <div className="text-sm font-medium text-cyan-800">IMD</div>
+                              <div className="text-2xl font-bold text-cyan-600">{formatPct(regionData.IMD, 2)}</div>
+                            </div>
+                            <div className="p-4 bg-gradient-to-br from-orange-50 to-amber-50 rounded-lg border">
+                              <div className="text-sm font-medium text-orange-800">Perokok/Kapita</div>
+                              <div className="text-2xl font-bold text-orange-600">{formatPct(regionData.RokokPerkapita, 3)}</div>
+                            </div>
+                            <div className="p-4 bg-gradient-to-br from-purple-50 to-violet-50 rounded-lg border">
+                              <div className="text-sm font-medium text-purple-800">Kepadatan Penduduk</div>
+                              <div className="text-2xl font-bold text-purple-600">{formatNum(regionData.Kepadatan)}<span className="text-base font-semibold"> jiwa/km²</span></div>
+                            </div>
+                            <div className="p-4 bg-gradient-to-br from-green-50 to-lime-50 rounded-lg border">
+                              <div className="text-sm font-medium text-green-800">Sanitasi Layak</div>
+                              <div className="text-2xl font-bold text-green-600">{formatPct(regionData.Sanitasi, 2)}</div>
+                            </div>
+                            <div className="p-4 bg-gradient-to-br from-blue-50 to-sky-50 rounded-lg border md:col-span-2">
+                              <div className="text-sm font-medium text-blue-800">Air Minum Layak</div>
+                              <div className="text-2xl font-bold text-blue-600">{formatPct(regionData.AirMinumLayak, 2)}</div>
+                            </div>
                           </div>
-                          <div className="p-4 bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg border">
-                            <div className="text-2xl font-bold text-green-600 mb-2">
-                              {typeof selectedRegionData?.equation?.coefficients?.sanitasi === 'number' 
-                                ? selectedRegionData.equation.coefficients.sanitasi.toFixed(3) 
-                                : "N/A"}
-                            </div>
-                            <div className="text-sm font-medium text-green-800">Koef. Sanitasi</div>
-                            <div className="text-xs text-green-600 mt-1">Pengaruh sanitasi</div>
-                          </div>
-                          <div className="p-4 bg-gradient-to-br from-purple-50 to-violet-50 rounded-lg border">
-                            <div className="text-2xl font-bold text-purple-600 mb-2">
-                              {typeof selectedRegionData?.equation?.coefficients?.kepadatan === 'number' 
-                                ? selectedRegionData.equation.coefficients.kepadatan.toFixed(3) 
-                                : "N/A"}
-                            </div>
-                            <div className="text-sm font-medium text-purple-800">Koef. Kepadatan</div>
-                            <div className="text-xs text-purple-600 mt-1">Pengaruh kepadatan</div>
+                          <div className="p-4 bg-muted/30 rounded-lg">
+                            <p className="text-sm text-muted-foreground">
+                              <strong>Catatan:</strong> Angka sesuai data wilayah aktual. Persentase ditampilkan dengan pemisah desimal Indonesia.
+                            </p>
                           </div>
                         </div>
-                        <div className="p-4 bg-muted/30 rounded-lg">
-                          <p className="text-sm text-muted-foreground">
-                            <strong>Analisis Wilayah:</strong> Data menunjukkan koefisien model GWNBR untuk wilayah {selectedRegion}. 
-                            Koefisien ini menggambarkan pengaruh lokal dari setiap variabel terhadap kasus pneumonia balita di area tersebut.
-                          </p>
+                      ) : (
+                        <div className="text-center py-8">
+                          <div className="text-muted-foreground mb-2">Data wilayah tidak ditemukan</div>
+                          <p className="text-sm text-muted-foreground">Silakan pilih wilayah lain pada peta</p>
                         </div>
-                      </div>
+                      )
                     ) : (
                       <div className="text-center py-8">
                         <div className="text-muted-foreground mb-2">Tidak ada wilayah yang dipilih</div>

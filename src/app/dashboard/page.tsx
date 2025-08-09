@@ -60,13 +60,6 @@ export default function Home() {
               </div>
             </AnimatedSection>
 
-            {/* Regional Data - Removed as requested */}
-            {/* <AnimatedSection delay={0.15}>
-              <div className="p-6">
-                <RegionalInsights />
-              </div>
-            </AnimatedSection> */}
-
             {/* Interactive Map Section */}
             <AnimatedSection delay={0.2}>
               <div className="p-6">

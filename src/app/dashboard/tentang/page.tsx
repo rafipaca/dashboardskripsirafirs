@@ -52,7 +52,7 @@ export default function About() {
                 Dashboard ini dikembangkan dengan tujuan utama:
               </p>
               <ul className="about-list">
-                <li>Mengidentifikasi pola spasial kasus pneumonia balita di 119 kabupaten/kota Pulau Jawa tahun 2022</li>
+                <li>Mengidentifikasi pola spasial kasus pneumonia balita di 119 kabupaten/kota Pulau Jawa tahun 2023</li>
                 <li>Menganalisis pengaruh lokal variabel sanitasi, air bersih, kepadatan penduduk, dan jumlah balita terhadap kejadian pneumonia</li>
                 <li>Menerapkan model GWNBR untuk menangani overdispersi dan heterogenitas spasial dalam data count</li>
                 <li>Menyediakan visualisasi interaktif hasil koefisien GWNBR dan analisis Z-hitung untuk setiap lokasi</li>
@@ -84,7 +84,7 @@ export default function About() {
               <div className="about-dataset-card">
                 <h3 className="about-dataset-title">Periode Data</h3>
                 <p className="about-text">
-                  Data yang dianalisis adalah data cross-sectional tahun 2022, mencakup kasus pneumonia balita 
+                  Data yang dianalisis adalah data cross-sectional tahun 2023, mencakup kasus pneumonia balita 
                   dan variabel prediktor pada periode yang sama untuk memastikan konsistensi temporal.
                 </p>
               </div>

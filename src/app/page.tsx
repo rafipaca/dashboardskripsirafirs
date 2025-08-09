@@ -32,7 +32,7 @@ const features = [
 const stats = [
   { label: "Kabupaten/Kota", value: "119" },
   { label: "Variabel Prediktor", value: "8" },
-  { label: "Periode Data", value: "2022" },
+  { label: "Periode Data", value: "2023" },
   { label: "Model Akurasi", value: "95%" }
 ];
 

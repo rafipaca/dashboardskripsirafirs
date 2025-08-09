@@ -50,7 +50,7 @@ export default function SummaryStats({
               </div>
               <div className="text-sm font-medium text-green-800">Wilayah Analisis</div>
               <div className="text-xs text-green-600 mt-1">
-                {studyPeriod || "2019-2022"}
+                {studyPeriod || "2023"}
               </div>
             </div>
             <div className="text-center p-4 bg-gradient-to-br from-purple-50 to-violet-50 rounded-lg border">

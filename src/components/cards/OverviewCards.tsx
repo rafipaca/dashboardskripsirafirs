@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MapPinIcon, BarChartIcon, UsersIcon, AlertTriangleIcon, ActivityIcon } from "lucide-react";
 import { useResearchData } from "@/hooks/useResearchData";
-import { getProvinceFromName } from "@/lib/utils/regionUtils";
+import { countJavaProvincesFromRawData } from "@/lib/utils/regionUtils";
 
 /**
  * Komponen reusable untuk kartu statistik overview
@@ -39,9 +39,8 @@ export default function OverviewCards() {
   // Hitung data aktual dari hooks berdasarkan data yang tersedia
   const totalRegions = rawData.length;
   
-  // Menggunakan utility function untuk mapping provinsi
-  
-  const totalProvinces = new Set(rawData.map(item => getProvinceFromName(item.NAMOBJ))).size;
+  // Hitung jumlah provinsi Pulau Jawa secara akurat (whitelist 6 provinsi)
+  const totalProvinces = countJavaProvincesFromRawData(rawData);
   
   // Hitung total kasus penemuan
   const totalCases = rawData.reduce((sum, item) => sum + item.Penemuan, 0);

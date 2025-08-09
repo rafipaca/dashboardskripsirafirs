@@ -4,7 +4,6 @@
  */
 
 export interface ResearchDataPoint {
-  NAMOBJ: string;
   No: number;
   NAMOBJ: string;
   Penemuan: number;
@@ -250,7 +249,7 @@ export function processDataForDashboard(data: ResearchDataPoint[]) {
       analyzedCases: data.length,
       avgCasesPerRegion,
       highRiskAreas,
-      studyPeriod: "2019-2022"
+  studyPeriod: "2023"
     },
     riskDistribution
   };

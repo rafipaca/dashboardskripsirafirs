@@ -60,14 +60,22 @@ const defaultFilters: PredictionFilters = {
   accuracyThreshold: 0.8
 };
 
-// Sample data untuk variabel independen (dalam implementasi nyata, ini akan diambil dari data CSV)
+// Utility: normalize region names for consistent matching
+const normalizeName = (name: string) => name
+  .replace(/^(kota|kabupaten)\s+/i, '')
+  .trim()
+  .toLowerCase();
+
 // Fungsi untuk mendapatkan data variabel dari data penelitian aktual
 const getActualVariables = (regionName: string, researchData: unknown[]) => {
-  const regionData = researchData.find((data): data is Record<string, unknown> => 
-    typeof data === 'object' && data !== null && 
-    'NAMOBJ' in data && typeof (data as Record<string, unknown>).NAMOBJ === 'string' &&
-    ((data as Record<string, unknown>).NAMOBJ as string).toLowerCase() === regionName.toLowerCase()
-  );
+  const target = normalizeName(regionName);
+  const regionData = researchData.find((data): data is Record<string, unknown> => {
+    if (typeof data !== 'object' || data === null) return false;
+    const raw = (data as Record<string, unknown>).NAMOBJ;
+    if (typeof raw !== 'string') return false;
+    const candidate = normalizeName(raw);
+    return candidate === target;
+  });
   
   if (!regionData) {
     console.warn(`Data tidak ditemukan untuk region: ${regionName}`);
@@ -93,11 +101,13 @@ const getActualVariables = (regionName: string, researchData: unknown[]) => {
 
 // Fungsi untuk mendapatkan nilai aktual dari data penelitian
 const getActualValue = (regionName: string, researchData: unknown[]): number => {
-  const regionData = researchData.find((data): data is Record<string, unknown> => 
-    typeof data === 'object' && data !== null && 
-    'NAMOBJ' in data && typeof (data as Record<string, unknown>).NAMOBJ === 'string' &&
-    ((data as Record<string, unknown>).NAMOBJ as string).toLowerCase() === regionName.toLowerCase()
-  );
+  const target = normalizeName(regionName);
+  const regionData = researchData.find((data): data is Record<string, unknown> => {
+    if (typeof data !== 'object' || data === null) return false;
+    const raw = (data as Record<string, unknown>).NAMOBJ;
+    if (typeof raw !== 'string') return false;
+    return normalizeName(raw) === target;
+  });
   
   return (regionData?.Penemuan as number) || 0;
 };
@@ -310,9 +320,10 @@ export function usePrediction(): UsePredictionReturn {
       return { prediction: null, equation: null, interpretation: null };
     }
     
-    const prediction = predictions.find(p => p.regionId === selectedRegion || p.regionName === selectedRegion) || null;
-    const equation = equations.find(e => e.regionName === selectedRegion || e.regionName === prediction?.regionName) || null;
-    const interpretation = interpretations.find(i => i.regionName === selectedRegion || i.regionName === prediction?.regionName) || null;
+  const sel = selectedRegion;
+  const prediction = predictions.find(p => normalizeName(p.regionId) === normalizeName(sel) || normalizeName(p.regionName) === normalizeName(sel)) || null;
+  const equation = equations.find(e => normalizeName(e.regionName) === normalizeName(sel) || (prediction && normalizeName(e.regionName) === normalizeName(prediction.regionName))) || null;
+  const interpretation = interpretations.find(i => normalizeName(i.regionName) === normalizeName(sel) || (prediction && normalizeName(i.regionName) === normalizeName(prediction.regionName))) || null;
     
     return { prediction, equation, interpretation };
   }, [selectedRegion, predictions, equations, interpretations]);

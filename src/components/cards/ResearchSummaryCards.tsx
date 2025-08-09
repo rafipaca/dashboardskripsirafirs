@@ -4,11 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { 
   MapPinIcon, 
   UsersIcon, 
-  CheckCircleIcon,
-  XCircleIcon
+  CheckCircleIcon
 } from "lucide-react";
-import { useResearchData } from "@/hooks/useResearchData";
-import { getProvinceFromName } from "@/lib/utils/regionUtils";
 import { cn } from "@/lib/utils";
 
 interface ResearchSummaryCardProps {
@@ -74,87 +71,48 @@ const ResearchSummaryCard = ({
 };
 
 export default function ResearchSummaryCards() {
-  const { rawData, loading, error } = useResearchData();
-  
-  if (loading) {
-    return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
-        {[...Array(6)].map((_, i) => (
-          <Card key={i}>
-            <CardContent className="pt-6">
-              <div className="animate-pulse space-y-2">
-                <div className="h-4 bg-muted rounded w-3/4"></div>
-                <div className="h-8 bg-muted rounded w-1/2"></div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-    );
-  }
-  
-  if (error) {
-    return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
-        <Card className="col-span-full border-red-200 bg-red-50">
-          <CardContent className="pt-6">
-            <div className="flex items-center space-x-2 text-red-600">
-              <XCircleIcon className="h-5 w-5" />
-              <span>Error memuat data: {error}</span>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  if (!rawData || rawData.length === 0) {
-    return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
-        <Card className="col-span-full">
-          <CardContent className="pt-6 text-center">
-            <CheckCircleIcon className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-            <p className="text-muted-foreground">Tidak ada data tersedia</p>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  // Hitung data aktual dari hooks berdasarkan data yang tersedia
-  const totalRegions = rawData.length;
-  const totalProvinces = new Set(rawData.map(item => getProvinceFromName(item.NAMOBJ))).size;
-  const totalCases = rawData.reduce((sum, item) => sum + item.Penemuan, 0);
-  // const avgCases = totalCases / totalRegions;
-  // Variabel untuk analisis lanjutan jika diperlukan
-  // const highRiskRegions = rawData.filter(item => item.Penemuan > avgCases * 2).length;
-  // const significantVariables = rawData.length > 0 
-  //   ? new Set(rawData.map(item => item.VariabelSignifikan).filter(v => v && v !== '').join(',').split(',').map(v => v.trim())).size
-  //   : 0;
-  // const avgSanitasi = rawData.length > 0 
-  //   ? Math.round((rawData.reduce((sum, item) => sum + item.Sanitasi, 0) / rawData.length) * 10) / 10
-  //   : 0;
-
-  const summaryData = [
+  type SummaryItem = Pick<ResearchSummaryCardProps, 'title' | 'value' | 'description' | 'icon' | 'variant' | 'showProgress' | 'progressValue' | 'maxValue'>;
+  const summaryData: SummaryItem[] = [
     {
       title: "Kabupaten/Kota",
-      value: totalRegions,
-      description: "Wilayah Penelitian",
+      value: "119",
+      description: "Lingkup Penelitian",
       icon: <MapPinIcon className="h-4 w-4" />,
       variant: "default" as "default" | "success" | "warning" | "error"
     },
     {
       title: "Provinsi",
-      value: totalProvinces,
-      description: "Di Pulau Jawa",
+      value: "7",
+      description: "Cakupan Geografis",
       icon: <MapPinIcon className="h-4 w-4" />,
       variant: "default" as "default" | "success" | "warning" | "error"
     },
     {
       title: "Total Kasus",
-      value: totalCases,
-      description: "Kasus pneumonia balita",
+      value: "330.222",
+      description: "Skala Masalah",
       icon: <UsersIcon className="h-4 w-4" />,
+      variant: "default" as "default" | "success" | "warning" | "error"
+    },
+    {
+      title: "Balita Gizi Kurang",
+      value: "250.111",
+      description: "Besaran Risiko Kunci",
+      icon: <UsersIcon className="h-4 w-4" />,
+      variant: "default" as "default" | "success" | "warning" | "error"
+    },
+    {
+  title: "Kasus Tertinggi",
+  value: "11.684",
+  description: "Jakarta Barat",
+      icon: <MapPinIcon className="h-4 w-4" />,
+      variant: "default" as "default" | "success" | "warning" | "error"
+    },
+    {
+      title: "Kelompok Risiko",
+      value: "6",
+      description: "Hasil Analisis",
+      icon: <CheckCircleIcon className="h-4 w-4" />,
       variant: "default" as "default" | "success" | "warning" | "error"
     }
   ];
