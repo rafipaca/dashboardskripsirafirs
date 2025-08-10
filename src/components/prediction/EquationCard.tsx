@@ -10,8 +10,6 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   Calculator, 
-  Eye, 
-  EyeOff, 
   Copy, 
   Download,
   Info,
@@ -21,6 +19,7 @@ import {
 import { EquationDisplay } from '@/types/prediction';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { MathTex } from '@/components/ui/MathTex';
 
 interface EquationCardProps {
   equation: EquationDisplay;
@@ -28,19 +27,29 @@ interface EquationCardProps {
 }
 
 export function EquationCard({ equation, className }: EquationCardProps) {
-  const [showZValues, setShowZValues] = useState(false);
   const [activeTab, setActiveTab] = useState('equation');
   
   const { regionName, coefficients, theta, equation: equationString } = equation;
   
-  // Format coefficient dengan tanda dan warna
-  const formatCoefficient = (value: number, isSignificant: boolean) => {
-    const formatted = value >= 0 ? `+${value.toFixed(7)}` : value.toFixed(7);
-    return {
-      value: formatted,
-      color: isSignificant ? 'text-green-600' : 'text-gray-500'
-    };
-  };
+  // Build TeX equation from the original equation string, same as in AnalyticsTabs
+
+  const equationTeX = React.useMemo(() => {
+    // Use the same approach as in AnalyticsTabs - take the original equation string and format it
+    const mapping = [
+      { idx: 1, pattern: 'GiziKurang', label: 'Gizi Kurang' },
+      { idx: 2, pattern: 'IMD', label: 'IMD' },
+      { idx: 3, pattern: 'Rokok', label: 'Rokok Per Kapita' },
+      { idx: 4, pattern: 'Kepadatan', label: 'Kepadatan Penduduk' },
+      { idx: 5, pattern: 'AirMinum', label: 'Air Minum Layak' },
+      { idx: 6, pattern: 'Sanitasi', label: 'Sanitasi Layak' },
+    ];
+    const base = equationString
+      // Normalize ln(mu) variants to KaTeX form
+      .replace(/ln\s*\((μ|µ|mu)\)/gi, '\\ln(\\mu)')
+      .replace(/×/g, '\\cdot ');
+    const toXi = mapping.reduce((acc, m) => acc.replace(new RegExp(m.pattern, 'g'), `X_{${m.idx}}`), base);
+    return toXi;
+  }, [equationString]);
   
   // Copy equation to clipboard
   const copyEquation = async () => {
@@ -81,7 +90,10 @@ export function EquationCard({ equation, className }: EquationCardProps) {
     sanitasi: 'Sanitasi Layak (β₆)'
   };
   
-  const significantCount = Object.values(coefficients).filter(c => c.significant).length;
+  // Count significant coefficients excluding intercept (intercept is not a variable)
+  const significantCount = Object.entries(coefficients)
+    .filter(([key, coef]) => key !== 'intercept' && coef.significant).length;
+  const totalVariables = Object.keys(coefficients).filter(k => k !== 'intercept').length;
   
   return (
     <Card className={cn('w-full', className)}>
@@ -91,19 +103,9 @@ export function EquationCard({ equation, className }: EquationCardProps) {
             <Calculator className="h-5 w-5 text-blue-600" />
             <span>Persamaan GWNBR - {regionName}</span>
           </CardTitle>
-          <div className="flex items-center space-x-2">
-            <Badge variant="outline">
-              {significantCount}/7 Signifikan
-            </Badge>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowZValues(!showZValues)}
-            >
-              {showZValues ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              {showZValues ? 'Sembunyikan Status' : 'Tampilkan Status'}
-            </Button>
-          </div>
+          <Badge variant="outline">
+            {significantCount}/{totalVariables} Variabel Signifikan
+          </Badge>
         </div>
       </CardHeader>
       
@@ -115,69 +117,50 @@ export function EquationCard({ equation, className }: EquationCardProps) {
             <TabsTrigger value="matrix">Matriks</TabsTrigger>
           </TabsList>
           
-          <TabsContent value="equation" className="space-y-4">
-            {/* Main Equation Display */}
-            <div className="bg-gray-50 p-4 rounded-lg border">
+          <TabsContent value="equation" className="space-y-3">
+            {/* Main Equation Display using KaTeX */}
+            <div className="bg-gray-50 p-3 rounded-lg border">
               <div className="text-center">
-                <div className="text-lg font-mono mb-2">
-                  ln(μ) = 
+                {/* Render inline to keep one line and allow horizontal scrolling */}
+                <div className="max-w-full overflow-x-auto">
+                  <MathTex inline className="inline-block min-w-max whitespace-nowrap text-sm sm:text-base" tex={equationTeX} />
                 </div>
-                <div className="text-sm font-mono leading-relaxed break-all">
-                  <span className={coefficients.intercept.significant ? 'text-green-600 font-semibold' : 'text-gray-500'}>
-                    {coefficients.intercept.value.toFixed(7)}
-                  </span>
-                  {Object.entries(coefficients).slice(1).map(([key, coef]) => {
-                    const formatted = formatCoefficient(coef.value, coef.significant);
-                    const varLabel = key === 'giziKurang' ? 'X₁' : 
-                                   key === 'imd' ? 'X₂' :
-                                   key === 'rokokPerkapita' ? 'X₃' :
-                                   key === 'kepadatan' ? 'X₄' :
-                                   key === 'airMinum' ? 'X₅' :
-                                   key === 'sanitasi' ? 'X₆' : 'X';
-                    
+                {/* Legend mapping X_i to variable names - more compact */}
+                <div className="mt-2 flex flex-wrap gap-1 justify-center text-xs text-gray-600">
+                  {[
+                    { idx: 1, label: 'Gizi Kurang' },
+                    { idx: 2, label: 'IMD' },
+                    { idx: 3, label: 'Rokok Per Kapita' },
+                    { idx: 4, label: 'Kepadatan Penduduk' },
+                    { idx: 5, label: 'Air Minum Layak' },
+                    { idx: 6, label: 'Sanitasi Layak' },
+                  ].map(({ idx, label }) => {
+                    const formattedLabel = label.replace(/ /g, '~');
                     return (
-                      <span key={key}>
-                        <span className={formatted.color}>
-                          {' '}{formatted.value}
-                        </span>
-                        <span className="text-gray-700">×{varLabel}</span>
+                      <span key={idx} className="px-1.5 py-0.5 rounded border bg-white text-xs">
+                        <MathTex tex={`X_{${idx}} = \\text{${formattedLabel}}`} />
                       </span>
                     );
                   })}
                 </div>
-                
-                {showZValues && (
-                  <div className="mt-3 pt-3 border-t border-gray-200">
-                    <div className="text-xs text-gray-600 mb-2">Status Signifikansi Variabel:</div>
-                    <div className="text-xs">
-                      {Object.entries(coefficients).map(([key, coef]) => (
-                        <div key={key} className="flex justify-between items-center py-1">
-                          <span>{variableLabels[key] || key}:</span>
-                          <span className={coef.significant ? 'text-green-600 font-semibold' : 'text-gray-500'}>
-                            {coef.significant ? 'Berpengaruh Signifikan' : 'Tidak Berpengaruh Signifikan'}
-                            {coef.significant && <CheckCircle className="inline h-3 w-3 ml-1" />}
-                            {!coef.significant && <XCircle className="inline h-3 w-3 ml-1" />}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
               </div>
             </div>
             
-            {/* Model Information */}
-            <div className="bg-blue-50 p-3 rounded-lg">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
+            {/* Compact Model Information and Status */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+              {/* Model Information */}
+              <div className="bg-blue-50 p-3 rounded-lg">
+                <div className="flex items-center space-x-2 mb-1">
                   <Info className="h-4 w-4 text-blue-600" />
                   <span className="text-sm font-medium text-blue-800">Model GWNBR</span>
                 </div>
-                <span className="text-sm text-blue-700">{significantCount} dari 7 variabel signifikan</span>
+                <div className="text-xs text-blue-600">
+                  {significantCount} dari {totalVariables} variabel signifikan
+                </div>
+                <p className="text-xs text-blue-600 mt-1">
+                  Geographically Weighted Negative Binomial Regression
+                </p>
               </div>
-              <p className="text-xs text-blue-600 mt-1">
-                Geographically Weighted Negative Binomial Regression untuk prediksi kasus pneumonia
-              </p>
             </div>
             
             {/* Action Buttons */}
@@ -275,7 +258,7 @@ export function EquationCard({ equation, className }: EquationCardProps) {
               <div className="bg-blue-50 p-3 rounded">
                 <div className="font-medium text-blue-800">Variabel Signifikan</div>
                 <div className="text-2xl font-bold text-blue-600">{significantCount}</div>
-                <div className="text-xs text-blue-600">dari 7 variabel</div>
+                <div className="text-xs text-blue-600">dari {totalVariables} variabel</div>
               </div>
               <div className="bg-green-50 p-3 rounded">
                 <div className="font-medium text-green-800">Model</div>

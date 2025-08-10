@@ -7,7 +7,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Button } from "@/components/ui/button";
 import { ChevronsUpDown } from 'lucide-react';
 import { Badge } from "@/components/ui/badge";
-import { InfoIcon, MapPinIcon, LayersIcon } from "lucide-react";
+import { MapPinIcon, LayersIcon } from "lucide-react";
 // import { MapLegend } from "./MapLegend";
 import { MapLoadingState } from "./MapLoadingState";
 import { Feature, FeatureCollection } from "geojson";
@@ -40,18 +40,92 @@ const mapLayers = [
 ];
 
 // Komponen untuk menampilkan konten legenda secara langsung
-function MapLegendContent({ activeLayer }: { activeLayer: string }) {
+function MapLegendContent({ activeLayer, geojsonData }: { activeLayer: string; geojsonData: FeatureCollection | null }) {
   const isSignificance = activeLayer === 'significance';
+  const { findRegionData } = useMapData();
+  
+  // Tipe untuk item legenda dengan count
+  interface LegendItem {
+    label: string;
+    color: string;
+    count?: number;
+  }
+  
+  // Untuk layer significance, kita perlu menganalisis data yang benar-benar ada
+  const getActualSignificanceItems = (): LegendItem[] => {
+    if (!geojsonData) return [];
+    
+    const colorCounts = new Map<string, LegendItem>();
+    
+    geojsonData.features.forEach(feature => {
+      const regionName = feature?.properties?.NAMOBJ || feature?.properties?.WADMKK || "";
+      const regionData = findRegionData(regionName);
+      
+      if (!regionData) {
+        const existing = colorCounts.get('#B0B0B0') || { color: '#B0B0B0', label: 'Tidak Signifikan / Lainnya', count: 0 };
+        colorCounts.set('#B0B0B0', { ...existing, count: (existing.count || 0) + 1 });
+        return;
+      }
+      
+      const significantVars = regionData.VariabelSignifikan;
+      if (!significantVars) {
+        const existing = colorCounts.get('#B0B0B0') || { color: '#B0B0B0', label: 'Tidak Signifikan / Lainnya', count: 0 };
+        colorCounts.set('#B0B0B0', { ...existing, count: (existing.count || 0) + 1 });
+        return;
+      }
+      
+      const cleanVars = significantVars.toString().replace(/"/g, '').trim();
+      if (cleanVars.toLowerCase().includes('tidak ada') || cleanVars === '') {
+        const existing = colorCounts.get('#B0B0B0') || { color: '#B0B0B0', label: 'Tidak Signifikan / Lainnya', count: 0 };
+        colorCounts.set('#B0B0B0', { ...existing, count: (existing.count || 0) + 1 });
+        return;
+      }
+      
+      const codes = new Set(cleanVars.split(',').map((code: string) => code.trim()));
+      const has = (v: string) => codes.has(v);
+
+      let color = '#B0B0B0';
+      let label = 'Tidak Signifikan / Lainnya';
+      
+      if (has('X1') && has('X3') && has('X4') && codes.size === 3) {
+        color = '#b91c1c';
+        label = 'Gizi Kurang, Rokok per Kapita, Kepadatan Penduduk';
+      } else if (has('X1') && has('X4') && codes.size === 2) {
+        color = '#581c87';
+        label = 'Gizi Kurang, Kepadatan Penduduk';
+      } else if (has('X3') && has('X4') && codes.size === 2) {
+        color = '#166534';
+        label = 'Rokok per Kapita, Kepadatan Penduduk';
+      } else if (has('X1') && codes.size === 1) {
+        color = '#facc15';
+        label = 'Gizi Kurang';
+      } else if (has('X3') && codes.size === 1) {
+        color = '#2563eb';
+        label = 'Rokok per Kapita';
+      } else if (has('X4') && codes.size === 1) {
+        color = '#9333ea';
+        label = 'Kepadatan Penduduk';
+      }
+      
+      const existing = colorCounts.get(color) || { color, label, count: 0 };
+      colorCounts.set(color, { ...existing, count: (existing.count || 0) + 1 });
+    });
+    
+    // Hanya tampilkan yang benar-benar ada (count > 0)
+    return Array.from(colorCounts.values())
+      .filter(item => (item.count || 0) > 0)
+      .sort((a, b) => (b.count || 0) - (a.count || 0)); // Urutkan berdasarkan jumlah (terbanyak dulu)
+  };
   
   const significanceLegend = {
     title: 'Legenda Signifikansi Variabel',
-    items: [
-  { label: 'Gizi Kurang, Rokok per Kapita, Kepadatan Penduduk', color: '#b91c1c' },
-  { label: 'Gizi Kurang, Kepadatan Penduduk', color: '#581c87' },
-  { label: 'Rokok per Kapita, Kepadatan Penduduk', color: '#166534' },
-  { label: 'Gizi Kurang', color: '#facc15' },
-  { label: 'Rokok per Kapita', color: '#2563eb' },
-  { label: 'Kepadatan Penduduk', color: '#9333ea' },
+    items: isSignificance ? getActualSignificanceItems() : [
+      { label: 'Gizi Kurang, Rokok per Kapita, Kepadatan Penduduk', color: '#b91c1c' },
+      { label: 'Gizi Kurang, Kepadatan Penduduk', color: '#581c87' },
+      { label: 'Rokok per Kapita, Kepadatan Penduduk', color: '#166534' },
+      { label: 'Gizi Kurang', color: '#facc15' },
+      { label: 'Rokok per Kapita', color: '#2563eb' },
+      { label: 'Kepadatan Penduduk', color: '#9333ea' },
       { label: 'Tidak Signifikan / Lainnya', color: '#B0B0B0' },
     ]
   };
@@ -86,17 +160,26 @@ function MapLegendContent({ activeLayer }: { activeLayer: string }) {
   return (
     <div className="space-y-3">
       <div className="space-y-2">
-        {legend.items.map((item, index) => (
-          <div
-            key={item.label || index}
-            className="flex items-center space-x-3"
-          >
-            <div className="w-4 h-4 rounded-md shadow-sm" style={{ backgroundColor: item.color }} />
-            <p className="text-xs text-muted-foreground font-medium">
-              {item.label}
-            </p>
-          </div>
-        ))}
+        {legend.items.map((item, index) => {
+          const itemWithCount = item as LegendItem;
+          const hasCount = isSignificance && itemWithCount.count && typeof itemWithCount.count === 'number';
+          return (
+            <div
+              key={item.label || index}
+              className="flex items-center space-x-3"
+            >
+              <div className="w-4 h-4 rounded-md shadow-sm" style={{ backgroundColor: item.color }} />
+              <p className="text-xs text-muted-foreground font-medium">
+                {item.label}
+                {hasCount && (
+                  <span className="ml-1 text-xs text-muted-foreground/70">
+                    ({itemWithCount.count} wilayah)
+                  </span>
+                )}
+              </p>
+            </div>
+          );
+        })}
       </div>
       
       {/* Gradient bar for choropleth */}
@@ -116,7 +199,7 @@ function MapLegendContent({ activeLayer }: { activeLayer: string }) {
 export default function MapCard({ geojsonData, isLoading, error, onRetry, onRegionSelect, onPredictionSelect }: MapCardProps) {
   const [activeLayer, setActiveLayer] = useState('significance');
   const [selectedRegionName, setSelectedRegionName] = useState('');
-  const { generateModelEquation, styleVersion } = useMapData();
+  const { styleVersion } = useMapData();
 
   const { provinces: availableProvinces, regionsByProvince, loading: wilayahLoading, error: wilayahError } = useWilayahData();
 
@@ -135,8 +218,8 @@ export default function MapCard({ geojsonData, isLoading, error, onRetry, onRegi
   // Effect to set a default province once data is loaded
   useEffect(() => {
     if (availableProvinces.length > 0 && !selectedProvince) {
-  // Default to JAWA BARAT if it exists, otherwise the first province
-  const defaultProvince = availableProvinces.find(p => p.toUpperCase() === 'JAWA BARAT') || availableProvinces[0];
+      // Default to JAWA BARAT if it exists, otherwise the first province
+      const defaultProvince = availableProvinces.find((p: string) => p.toUpperCase() === 'JAWA BARAT') || availableProvinces[0];
       setSelectedProvince(defaultProvince);
     }
   }, [availableProvinces, selectedProvince]);
@@ -205,7 +288,7 @@ export default function MapCard({ geojsonData, isLoading, error, onRetry, onRegi
         </div>
         
         {/* Navigasi dan Kontrol di bawah peta */}
-         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
            {/* Navigasi Peta */}
            <Card>
              <CardHeader className="pb-2">
@@ -295,25 +378,6 @@ export default function MapCard({ geojsonData, isLoading, error, onRetry, onRegi
              </CardContent>
            </Card>
           
-          {/* Detail Wilayah */}
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-lg">Wilayah</CardTitle>
-              <CardDescription>Detail model untuk wilayah terpilih</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-xs text-muted-foreground flex items-center gap-1 mb-2">
-                <InfoIcon className="h-3 w-3" />
-                <span>Klik wilayah untuk detail model regresi</span>
-              </div>
-              <p className="text-sm font-mono bg-muted p-2 rounded-md break-words">
-                {selectedRegionName 
-                  ? generateModelEquation(selectedRegionName)
-                  : 'Pilih wilayah pada peta untuk melihat modelnya.'}
-              </p>
-            </CardContent>
-          </Card>
-          
           {/* Legenda - Selalu Terbuka */}
           <Card>
             <CardHeader className="pb-2">
@@ -324,7 +388,7 @@ export default function MapCard({ geojsonData, isLoading, error, onRetry, onRegi
               <CardDescription>Keterangan warna dan simbol peta</CardDescription>
             </CardHeader>
             <CardContent>
-              <MapLegendContent activeLayer={activeLayer} />
+              <MapLegendContent activeLayer={activeLayer} geojsonData={geojsonData} />
             </CardContent>
           </Card>
         </div>

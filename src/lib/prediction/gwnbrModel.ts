@@ -201,7 +201,7 @@ function generateEquationString(coefficients: GWNBRCoefficient): string {
   const toFixed7 = (v: number) => clampToZero(v).toFixed(7);
   const formatCoef = (value: number, variable: string) => {
     const v = clampToZero(value);
-    const sign = v >= 0 ? '+' : '';
+    const sign = v >= 0 ? '+' : '-';
     return `${sign}${Math.abs(v).toFixed(7)}×${variable}`;
   };
   

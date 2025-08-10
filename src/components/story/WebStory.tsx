@@ -5,7 +5,7 @@ import { WebStoryData, StorySection } from "@/types/story";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { BookOpen, FlaskConical, Target, Rocket, Flag, Sparkles, MapPin, BarChart3, Activity, Users, Zap, TrendingUp, ArrowUp } from "lucide-react";
+import { BookOpen, Target, Rocket, Flag, Sparkles, MapPin, BarChart3, Activity, Users, Zap, TrendingUp, ArrowUp } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { motion } from "framer-motion";
@@ -127,19 +127,22 @@ export default function WebStory({ data }: Props) {
             { label: "Variabel Prediktor", value: "8", icon: BarChart3, color: "text-green-600" },
             { label: "Periode Data", value: "2023", icon: Activity, color: "text-purple-600" },
             { label: "Model Akurasi", value: "95%", icon: Target, color: "text-orange-600" },
-          ].map((s, i) => (
-            <Card key={i} className="shadow-sm bg-card border">
+          ].map((s, i) => {
+            const IconComp = s.icon;
+            return (
+              <Card key={i} className="shadow-sm bg-card border">
                 <CardContent className="py-4 text-center">
                   <div className="flex items-center justify-center mb-2">
-    <div className={`w-8 h-8 rounded-full bg-muted grid place-items-center`}>
-            <s.icon className="h-4 w-4 text-muted-foreground" />
+                    <div className={`w-8 h-8 rounded-full bg-muted grid place-items-center`}>
+                      <IconComp className="h-4 w-4 text-muted-foreground" />
                     </div>
                   </div>
                   <div className="text-2xl font-semibold text-[#1d9bf0]">{s.value}</div>
                   <div className="text-xs text-muted-foreground">{s.label}</div>
                 </CardContent>
-        </Card>
-          ))}
+              </Card>
+            );
+          })}
         </motion.div>
       </div>
 
@@ -161,7 +164,7 @@ export default function WebStory({ data }: Props) {
             >
               <div className="grid lg:grid-cols-12 gap-8 items-center">
                 <motion.div 
-                  className="lg:col-span-8"
+                  className="lg:col-span-12"
                   whileHover={{ scale: 1.02 }} 
                   transition={{ type: "spring", stiffness: 300 }}
                 >
@@ -189,199 +192,287 @@ export default function WebStory({ data }: Props) {
                     </CardContent>
                   </Card>
                 </motion.div>
-                
-                {/* Side statistics panel */}
-                <motion.div 
-                  className="lg:col-span-4"
-                  initial={{ opacity: 0, x: 50 }}
+              </div>
+            </motion.section>
+
+            {/* 1. Two Column Information Section - Ancaman Senyap & Masalah Terlupakan */}
+            <motion.section
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-100px" }}
+              transition={{ duration: 0.6 }}
+              className="relative"
+            >
+              <div className="grid lg:grid-cols-2 gap-8">
+                {/* First Column - Masalah yang Terlupakan */}
+                <motion.div
+                  initial={{ opacity: 0, x: -30 }}
                   whileInView={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.5, delay: 0.1 }}
+                  transition={{ duration: 0.6, delay: 0.1 }}
                 >
-                  <div className="space-y-4">
-                    <h3 className="text-sm font-semibold text-muted-foreground mb-2">Key Statistics</h3>
-                    {[ 
-                      { icon: MapPin, label: "Kabupaten/Kota", value: "119", color: "from-blue-500 to-cyan-500" },
-                      { icon: BarChart3, label: "Variabel Prediktor", value: "8", color: "from-green-500 to-emerald-500" },
-                      { icon: Activity, label: "Periode Data", value: "2023", color: "from-purple-500 to-violet-500" },
-                      { icon: Target, label: "Model Akurasi", value: "95%", color: "from-orange-500 to-red-500" },
-                    ].map((stat, i) => (
-                      <div key={i} className="bg-muted p-4 rounded-xl text-foreground">
-                        <div className="flex items-center gap-3">
-                          <stat.icon className="h-6 w-6 text-muted-foreground" />
-                          <div>
-              <div className="text-2xl font-semibold text-[#1d9bf0]">{stat.value}</div>
-              <div className="text-sm text-muted-foreground">{stat.label}</div>
-                          </div>
+                  <Card className="shadow-sm bg-card border h-full">
+                    <CardContent className="p-8">
+                      <div className="flex items-center gap-3 mb-6">
+                        <div className="w-12 h-12 rounded-xl bg-muted grid place-items-center border border-[#1d9bf0]/30">
+                          <Users className="h-6 w-6 text-[#1d9bf0]" />
+                        </div>
+                        <div>
+                          <Badge variant="outline" className="mb-2 text-xs border-[#1d9bf0] text-[#1d9bf0]">
+                            PERKENALAN
+                          </Badge>
+                          <h3 className="text-xl font-bold text-foreground leading-tight">
+                            {data.story_sections[0]?.title}
+                          </h3>
                         </div>
                       </div>
-                    ))}
+                      <div className="prose prose-lg dark:prose-invert max-w-none">
+                        <div className="text-lg leading-relaxed text-gray-700 dark:text-gray-300" 
+                             dangerouslySetInnerHTML={{ __html: mdToHtml(data.story_sections[0]?.content || '') }} />
+                      </div>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+
+                {/* Second Column - Ancaman Senyap (using abstract) */}
+                <motion.div
+                  initial={{ opacity: 0, x: 30 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.6, delay: 0.2 }}
+                >
+                  <Card className="shadow-sm bg-card border h-full">
+                    <CardContent className="p-8">
+                      <div className="flex items-center gap-3 mb-6">
+                        <div className="w-12 h-12 rounded-xl bg-muted grid place-items-center border border-[#1d9bf0]/30">
+                          <Sparkles className="h-6 w-6 text-[#1d9bf0]" />
+                        </div>
+                        <div>
+                          <Badge variant="outline" className="mb-2 text-xs border-[#1d9bf0] text-[#1d9bf0]">
+                            ABSTRAK PENELITIAN
+                          </Badge>
+                          <h3 className="text-xl font-bold text-foreground leading-tight">
+                            {data.abstract.title}
+                          </h3>
+                        </div>
+                      </div>
+                      <div className="prose prose-lg dark:prose-invert max-w-none">
+                        <div className="text-lg leading-relaxed text-gray-700 dark:text-gray-300" 
+                             dangerouslySetInnerHTML={{ __html: mdToHtml(data.abstract.content) }} />
+                      </div>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              </div>
+            </motion.section>
+
+            {/* 2. Satu Solusi Tak Cukup - 2 kolom dengan gambar kanan */}
+            <motion.section
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-100px" }}
+              transition={{ duration: 0.6 }}
+              className="relative"
+            >
+              <div className="grid lg:grid-cols-2 gap-8 items-center">
+                {/* Left Column - Content */}
+                <motion.div
+                  initial={{ opacity: 0, x: -30 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.6, delay: 0.1 }}
+                >
+                  <Card className="shadow-sm bg-card border">
+                    <CardContent className="p-8">
+                      <div className="flex items-center gap-3 mb-6">
+                        <div className="w-12 h-12 rounded-xl bg-muted grid place-items-center border border-[#1d9bf0]/30">
+                          <Users className="h-6 w-6 text-[#1d9bf0]" />
+                        </div>
+                        <div>
+                          <Badge variant="outline" className="mb-2 text-xs border-[#1d9bf0] text-[#1d9bf0]">
+                            PERKENALAN
+                          </Badge>
+                          <h3 className="text-xl font-bold text-foreground leading-tight">
+                            {data.story_sections[1]?.title}
+                          </h3>
+                        </div>
+                      </div>
+                      <div className="prose prose-lg dark:prose-invert max-w-none">
+                        <div className="text-lg leading-relaxed text-gray-700 dark:text-gray-300" 
+                             dangerouslySetInnerHTML={{ __html: mdToHtml(data.story_sections[1]?.content || '') }} />
+                      </div>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+
+                {/* Right Column - Image placeholder */}
+                <motion.div
+                  initial={{ opacity: 0, x: 30 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.6, delay: 0.2 }}
+                  className="relative"
+                >
+                  <div className="bg-muted/20 rounded-2xl p-12 text-center border-2 border-dashed border-muted-foreground/20">
+                    <Target className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
+                    <h4 className="text-lg font-semibold text-foreground mb-2">Ilustrasi Konsep</h4>
+                    <p className="text-muted-foreground">Gambar untuk "Satu Solusi Tak Cukup"</p>
                   </div>
                 </motion.div>
               </div>
             </motion.section>
 
-            {/* Sections with completely different layouts */}
-            {data.story_sections.map((sec, idx) => (
-              <motion.section
-                key={idx}
-                id={slugify(sec.title, idx)}
-                initial={{ opacity: 0, y: 40 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: "-100px" }}
-                transition={{ duration: 0.7, delay: 0.1 }}
-                
-                className="relative"
-              >
-                {/* Layout Pattern 1: Split Screen */}
-                {idx % 4 === 0 && (
-                  <div className="grid lg:grid-cols-2 gap-12 items-stretch">
-                    {/* Visual Side */}
-                    <div className="relative order-2 lg:order-1">
-                      <div className="h-full bg-muted/30 rounded-2xl p-8 flex flex-col justify-center items-center">
-                        <div className="text-center">
-                          <h4 className="text-4xl font-bold text-primary mb-2">55%</h4>
-                          <p className="text-foreground font-medium">Kasus Pneumonia</p>
-                          <p className="text-sm text-muted-foreground">di Pulau Jawa</p>
-                        </div>
-                      </div>
+            {/* 3. Map Section */}
+            <motion.section
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-100px" }}
+              transition={{ duration: 0.6 }}
+              className="relative"
+            >
+              <Card className="shadow-sm bg-card border">
+                <CardContent className="p-8">
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="w-12 h-12 rounded-xl bg-muted grid place-items-center border border-[#1d9bf0]/30">
+                      <MapPin className="h-6 w-6 text-[#1d9bf0]" />
                     </div>
-                    
-                    {/* Content Side */}
-                    <div className="order-1 lg:order-2">
-                      <Card className="h-full shadow-sm bg-card border">
-                        <CardContent className="p-8 h-full flex flex-col justify-center">
-                          <SectionHeader sec={sec} />
-                          <SectionContent sec={sec} idx={idx} />
-                        </CardContent>
-                      </Card>
+                    <div>
+                      <Badge variant="outline" className="mb-2 text-xs border-[#1d9bf0] text-[#1d9bf0]">
+                        PETA INTERAKTIF
+                      </Badge>
+                      <h3 className="text-xl font-bold text-foreground leading-tight">
+                        Peta Faktor Risiko Wilayah (Interaktif)
+                      </h3>
                     </div>
                   </div>
-                )}
-
-                {/* Layout Pattern 2: Overlay Style */}
-                {idx % 4 === 1 && (
-                  <div className="relative">
-                    <div className="grid lg:grid-cols-3 gap-8">
-                      <Card className="lg:col-span-2 shadow-sm bg-card border relative overflow-hidden">
-                        <CardContent className="p-8 relative z-10">
-                          <SectionHeader sec={sec} />
-                          <SectionContent sec={sec} idx={idx} />
-                        </CardContent>
-                      </Card>
-                      
-                      {/* Side info panel */}
-                      <div className="space-y-4">
-                         <div className="bg-muted p-6 rounded-2xl">
-                          <FlaskConical className="h-12 w-12 mb-4 text-muted-foreground" />
-                          <h4 className="font-bold text-lg mb-2">GWNBR Model</h4>
-                          <p className="text-sm text-muted-foreground">Satu resep unik untuk 119 kabupaten/kota</p>
-                        </div>
-                        
-                         <div className="bg-muted p-6 rounded-2xl">
-                           <div className="text-2xl font-bold text-[#1d9bf0]">8</div>
-                          <div className="text-sm text-muted-foreground">Variabel Prediktor</div>
-                        </div>
-                      </div>
-                    </div>
+                  <div className="prose prose-lg dark:prose-invert max-w-none mb-6">
+                    <p className="text-lg leading-relaxed text-gray-700 dark:text-gray-300">
+                      Jelajahi signifikansi variabel dan nilai indikator per kabupaten/kota di Pulau Jawa.
+                    </p>
                   </div>
-                )}
+                  {/* Map component placeholder - will integrate with dashboard map */}
+                  <div className="bg-muted/10 rounded-lg p-8 text-center border">
+                    <MapPin className="h-20 w-20 mx-auto mb-4 text-muted-foreground" />
+                    <h4 className="text-lg font-semibold text-foreground mb-2">Peta Interaktif Dashboard</h4>
+                    <p className="text-muted-foreground mb-4">Map dari dashboard akan ditampilkan di sini</p>
+                    <Button asChild className="bg-[#1d9bf0] hover:bg-[#1a8cd8] text-white">
+                      <Link href="/dashboard">
+                        <MapPin className="mr-2 h-4 w-4" />
+                        Lihat di Dashboard
+                      </Link>
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.section>
 
-                {/* Layout Pattern 3: Masonry Style */}
-        {idx % 4 === 2 && (
-                  <div className="grid lg:grid-cols-4 gap-6">
-                    {/* Main content spans 3 columns */}
-          <div className="lg:col-span-3">
-                      <Card className="shadow-sm bg-card border relative overflow-hidden">
+            {/* 4. Cluster Sections - 2 kolom (kiri: penjelasan, kanan: gambar) */}
+            {data.story_sections.slice(4).map((sec, idx) => {
+              // Only show key_findings sections (cluster explanations)
+              if (sec.type !== "key_findings") return null;
+              
+              return (
+                <motion.section
+                  key={idx + 4}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, margin: "-100px" }}
+                  transition={{ duration: 0.6 }}
+                  className="relative"
+                >
+                  <div className="grid lg:grid-cols-2 gap-8 items-stretch">
+                    {/* Left Column - Explanation */}
+                    <motion.div
+                      initial={{ opacity: 0, x: -30 }}
+                      whileInView={{ opacity: 1, x: 0 }}
+                      transition={{ duration: 0.6, delay: 0.1 }}
+                    >
+                      <Card className="shadow-sm bg-card border">
                         <CardContent className="p-8">
-                          <SectionHeader sec={sec} />
-                          
-                          {/* Special treatment for key findings */}
-                          <div className="grid md:grid-cols-2 gap-6 mb-6">
-                            {[
-                { zone: "Sabuk Gizi Kurang", count: "58 kab/kota" },
-                { zone: "Dilema Kepadatan", count: "26 wilayah" },
-                { zone: "Beban Ganda", count: "8 kab/kota" },
-                { zone: "Ancaman Tiga Lapis", count: "15 kab/kota" },
-                            ].map((item, i) => (
-                <div key={i} className="bg-muted p-4 rounded-xl text-foreground">
-                                <div className="font-bold text-lg">{item.zone}</div>
-                                <div className="text-sm text-muted-foreground">{item.count}</div>
-                </div>
-                            ))}
+                          <div className="flex items-center gap-3 mb-6">
+                            <div className="w-12 h-12 rounded-xl bg-muted grid place-items-center border border-[#1d9bf0]/30">
+                              <Target className="h-6 w-6 text-[#1d9bf0]" />
+                            </div>
+                            <div>
+                              <Badge variant="outline" className="mb-2 text-xs border-[#1d9bf0] text-[#1d9bf0]">
+                                TEMUAN KUNCI
+                              </Badge>
+                              <h3 className="text-xl font-bold text-foreground leading-tight">
+                                {sec.title}
+                              </h3>
+                            </div>
                           </div>
-                          
-                          <SectionContent sec={sec} idx={idx} />
+                          <div className="prose prose-lg dark:prose-invert max-w-none">
+                            <div className="text-lg leading-relaxed text-gray-700 dark:text-gray-300" 
+                                 dangerouslySetInnerHTML={{ __html: mdToHtml(sec.content || '') }} />
+                          </div>
                         </CardContent>
                       </Card>
-          </div>
-                    
-                    {/* Side visual */}
-          <div className="lg:col-span-1 flex flex-col gap-4">
-                      <div className="bg-muted/30 rounded-2xl p-6 text-center">
-            <Target className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
-                        <h4 className="font-bold text-foreground">4 Zona</h4>
-                        <p className="text-sm text-muted-foreground">Risiko Berbeda</p>
-                      </div>
-                      
-                       <div className="bg-muted/30 rounded-2xl p-6 text-center">
-                         <div className="text-3xl font-bold text-[#1d9bf0]">119</div>
-                        <div className="text-sm text-muted-foreground">Wilayah Analisis</div>
-                      </div>
-          </div>
-                  </div>
-                )}
+                    </motion.div>
 
-                {/* Layout Pattern 4: Full Width Immersive */}
-                {idx % 4 === 3 && (
-                  <div className="relative">
-                    {sec.content.trim().startsWith("<img") ? (
-                      (() => {
-                        const srcMatch = sec.content.match(/src=["']([^"']+)["']/i);
-                        const altMatch = sec.content.match(/alt=["']([^"']*)["']/i);
-                        const src = srcMatch ? srcMatch[1] : "";
-                        const alt = altMatch ? altMatch[1] : "";
-                        return (
-                          <div className="relative -mx-[50vw] left-1/2 right-1/2 w-screen">
+                    {/* Right Column - Image */}
+                    <motion.div
+                      initial={{ opacity: 0, x: 30 }}
+                      whileInView={{ opacity: 1, x: 0 }}
+                      transition={{ duration: 0.6, delay: 0.2 }}
+                      className="relative"
+                    >
+                      <div className="relative h-full min-h-[420px] md:min-h-[520px] overflow-hidden">
+                        {sec.imageSrc ? (
+                          <>
                             {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img src={src} alt={alt} className="block w-screen h-auto mx-auto" />
-                          </div>
-                        );
-                      })()
-                    ) : (
-                      <Card className="shadow-sm bg-card border overflow-hidden">
-                        <CardContent className="p-0">
-                          <div className="grid lg:grid-cols-2">
-                            {/* Content side */}
-                            <div className="p-8 lg:p-12">
-                              <SectionHeader sec={sec} />
-                              <SectionContent sec={sec} idx={idx} />
-                              {/* CTA only for practical application section */}
-                              {sec.type === "practical_application" && (
-                                <div className="mt-6">
-                                  <Button asChild className="bg-[#1d9bf0] hover:bg-[#1a8cd8] text-white">
-                                    <Link href="/dashboard">
-                                      <Rocket className="mr-2 h-5 w-5" />
-                                      Akses Dashboard
-                                    </Link>
-                                  </Button>
-                                </div>
-                              )}
-                            </div>
-                            {/* Visual side - full height */}
-                            <div className="bg-muted/20 p-8 flex items-center justify-center relative">
-                              <Rocket className="h-20 w-20 text-muted-foreground" />
+                            <img
+                              src={sec.imageSrc}
+                              alt={sec.imageAlt || sec.title}
+                              className="absolute inset-0 w-full h-full object-cover"
+                            />
+                          </>
+                        ) : (
+                          <div className="flex items-center justify-center h-full text-center">
+                            <div>
+                              <BarChart3 className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
+                              <h4 className="text-lg font-semibold text-foreground mb-2">Ilustrasi Kluster</h4>
+                              <p className="text-muted-foreground">{sec.title}</p>
                             </div>
                           </div>
-                        </CardContent>
-                      </Card>
-                    )}
+                        )}
+                      </div>
+                    </motion.div>
                   </div>
-                )}
+                </motion.section>
+              );
+            })}
 
-                {/* Simple divider */}
-                <div className="my-10 md:my-12 h-px bg-border" />
-              </motion.section>
-            ))}            {/* Ending CTA */}
+            {/* Other sections (conclusion, practical application, etc.) */}
+            {data.story_sections.slice(2).map((sec, idx) => {
+              const adjustedIdx = idx + 2;
+              if (sec.type === "key_findings" || adjustedIdx === 2) return null;
+              return (
+                <motion.section
+                  key={adjustedIdx}
+                  id={slugify(sec.title, adjustedIdx)}
+                  initial={{ opacity: 0, y: 40 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, margin: "-100px" }}
+                >
+                  <Card className="shadow-sm bg-card border">
+                    <CardContent className="p-8">
+                      <SectionHeader sec={sec} />
+                      <SectionContent sec={sec} idx={adjustedIdx} />
+                      {sec.type === "practical_application" && (
+                        <div className="mt-6">
+                          <Button asChild className="bg-[#1d9bf0] hover:bg-[#1a8cd8] text-white">
+                            <Link href="/dashboard">
+                              <Rocket className="mr-2 h-5 w-5" />
+                              Akses Dashboard
+                            </Link>
+                          </Button>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                  <div className="my-10 md:my-12 h-px bg-border" />
+                </motion.section>
+              );
+            })}
+            
+            {/* Ending CTA */}
             <motion.section
               id="closing"
               initial={{ opacity: 0, y: 24 }}
@@ -451,6 +542,7 @@ function SectionHeader({ sec }: { sec: StorySection }) {
     key_findings: Target,
     practical_application: Rocket,
     conclusion: Flag,
+    map: MapPin,
   };
 
   const pillFromTypeLocal: Record<StorySection["type"], string> = {
@@ -459,6 +551,7 @@ function SectionHeader({ sec }: { sec: StorySection }) {
     key_findings: "TEMUAN KUNCI",
     practical_application: "APLIKASI PRAKTIS",
     conclusion: "KESIMPULAN",
+    map: "PETA INTERAKTIF",
   };
 
   const Icon = iconByType[sec.type];
@@ -501,6 +594,35 @@ function SectionContent({ sec, idx }: { sec: StorySection; idx: number }) {
     return html.trim();
   };
 
+  // Handle different section types
+  if (sec.type === "map") {
+    return (
+      <div className="prose prose-lg dark:prose-invert max-w-none" data-idx={idx}>
+        {sec.description && (
+          <div className="text-lg leading-relaxed text-gray-700 dark:text-gray-300">
+            <p>{sec.description}</p>
+          </div>
+        )}
+        {/* Map component would be rendered here */}
+        <div className="bg-muted/20 rounded-lg p-6 text-center">
+          <MapPin className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+          <p className="text-muted-foreground">Peta interaktif akan ditampilkan di sini</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Default content rendering for other section types
+  if (!sec.content) {
+    return (
+      <div className="prose prose-lg dark:prose-invert max-w-none" data-idx={idx}>
+        <div className="text-lg leading-relaxed text-gray-700 dark:text-gray-300">
+          <p className="text-muted-foreground">Konten tidak tersedia</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="prose prose-lg dark:prose-invert max-w-none" data-idx={idx}>
       <div className="text-lg leading-relaxed text-gray-700 dark:text-gray-300" dangerouslySetInnerHTML={{ __html: mdToHtml(sec.content) }} />
@@ -509,6 +631,10 @@ function SectionContent({ sec, idx }: { sec: StorySection; idx: number }) {
 }
 
 function slugify(title: string, index = 0) {
+  if (!title) {
+    return `section-${index}`;
+  }
+  
   return (
     title
       .toLowerCase()

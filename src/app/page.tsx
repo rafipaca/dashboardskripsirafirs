@@ -1,12 +1,12 @@
 "use client";
 
-import WebStory from "@/components/story/WebStory";
+import WebStoryNew from "@/components/story/WebStoryNew";
 import { webStoryData } from "@/lib/data/webstory";
 
 export default function LandingPage() {
   return (
     <main className="min-h-screen">
-      <WebStory data={webStoryData} />
+      <WebStoryNew data={webStoryData} />
     </main>
   );
 }

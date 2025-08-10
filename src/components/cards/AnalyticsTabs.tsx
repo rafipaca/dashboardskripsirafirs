@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { DownloadIcon, ShareIcon, ActivityIcon, TrendingUpIcon } from "lucide-react";
 // import { Badge } from "@/components/ui/badge";
-import { useChartData, useSpatialAnalysis, useResearchData } from "@/hooks/useResearchData";
+import { useChartData, useResearchData } from "@/hooks/useResearchData";
 import { useMapData } from "@/hooks/useMapData";
 // Import new refactored components
 
@@ -16,6 +16,8 @@ import { useMapData } from "@/hooks/useMapData";
 import { usePrediction } from "@/hooks/usePrediction";
 import { InterpretationCard, InterpretationCardSkeleton } from "@/components/prediction/InterpretationCard";
 import { EquationCard, EquationCardSkeleton } from "@/components/prediction/EquationCard";
+import { createSimpleInterpretation } from "@/lib/interpretation/utils";
+import { MathTex } from "@/components/ui/MathTex";
 
 interface AnalyticsTabsProps {
   selectedRegion: string | null;
@@ -24,7 +26,6 @@ interface AnalyticsTabsProps {
 export default function AnalyticsTabs({ selectedRegion }: AnalyticsTabsProps) {
   // Menggunakan data penelitian yang sebenarnya
   const { /* barChartData, pieChartData, lineChartData, */ summaryStats, loading, error } = useChartData();
-  const { modelEffectiveness } = useSpatialAnalysis();
   const { getRegionData } = useResearchData();
   const { findRegionData } = useMapData();
   
@@ -63,6 +64,10 @@ export default function AnalyticsTabs({ selectedRegion }: AnalyticsTabsProps) {
   // Regional raw data for the selected region
   // Use robust finder to honor exact CSV naming (Kota/Kabupaten/Administrasi)
   const regionData = selectedRegion ? (findRegionData(selectedRegion) || getRegionData(selectedRegion)) : null;
+  // Total variabel yang digunakan dalam model (excl. intercept karena intercept bukan variabel independen)
+  const totalVariablesUsed = selectedRegionData?.equation
+    ? Object.keys(selectedRegionData.equation.coefficients).filter(k => k !== 'intercept').length
+    : 6;
   const nfID = (opts?: Intl.NumberFormatOptions) => new Intl.NumberFormat('id-ID', opts);
   const formatNum = (val?: number | null) => (typeof val === 'number' ? nfID().format(val) : 'N/A');
   const formatPct = (val?: number | null, digits: number = 2) =>
@@ -137,18 +142,24 @@ export default function AnalyticsTabs({ selectedRegion }: AnalyticsTabsProps) {
                         <ActivityIcon className="h-5 w-5" />
                         Ringkasan Analisis GWNBR
                       </CardTitle>
-                      <CardDescription className="text-sm text-muted-foreground">
-                        Analisis menggunakan model GWNBR untuk kasus pneumonia balita
-                      </CardDescription>
+                        <CardDescription className="text-sm text-muted-foreground">
+                          Analisis menggunakan model GWNBR untuk kasus pneumonia balita
+                        </CardDescription>
+                        {selectedRegion && (
+                          <div className="mt-1 text-sm">
+                            <span className="text-muted-foreground">Ringkasan untuk: </span>
+                            <span className="font-medium">{selectedRegion}</span>
+                          </div>
+                        )}
                     </CardHeader>
                     <CardContent>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="text-center p-4 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg border">
                           <div className="text-3xl font-bold text-blue-600 mb-2">
-                            {modelEffectiveness?.effectivenessRate?.toFixed(1) || "N/A"}%
+                            {totalVariablesUsed}
                           </div>
-                          <div className="text-sm font-medium text-blue-800">Efektivitas Model</div>
-                          <div className="text-xs text-blue-600 mt-1">GWNBR</div>
+                          <div className="text-sm font-medium text-blue-800">Variabel Model</div>
+                          <div className="text-xs text-blue-600 mt-1">Total variabel</div>
                         </div>
                         <div className="text-center p-4 bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg border">
                           <div className="text-3xl font-bold text-green-600 mb-2">
@@ -165,6 +176,112 @@ export default function AnalyticsTabs({ selectedRegion }: AnalyticsTabsProps) {
                           <strong>Catatan:</strong> Analisis ini menggunakan model Geographically Weighted Negative Binomial Regression (GWNBR) 
                           untuk mengidentifikasi pola spasial kasus pneumonia balita di Pulau Jawa.
                         </p>
+                      </div>
+
+                      {/* Ringkasan Persamaan (full width di atas) */}
+                      <div className="mt-6 p-4 rounded-lg border bg-white">
+                        <div className="text-sm font-semibold mb-2">Ringkasan Persamaan</div>
+                        {selectedRegionData?.equation ? (
+                          <div className="space-y-2 text-sm">
+                            {(() => {
+                              const mapping = [
+                                { idx: 1, pattern: 'GiziKurang', label: 'Gizi Kurang' },
+                                { idx: 2, pattern: 'IMD', label: 'IMD' },
+                                { idx: 3, pattern: 'Rokok', label: 'Rokok Per Kapita' },
+                                { idx: 4, pattern: 'Kepadatan', label: 'Kepadatan Penduduk' },
+                                { idx: 5, pattern: 'AirMinum', label: 'Air Minum Layak' },
+                                { idx: 6, pattern: 'Sanitasi', label: 'Sanitasi Layak' },
+                              ];
+                              const base = selectedRegionData.equation.equation
+                                // Normalize ln(mu) variants to KaTeX form
+                                .replace(/ln\s*\((μ|µ|mu)\)/gi, '\\ln(\\mu)')
+                                .replace(/×/g, '\\cdot ');
+                              const toXi = mapping.reduce((acc, m) => acc.replace(new RegExp(m.pattern, 'g'), `X_{${m.idx}}`), base);
+                              return (
+                                <>
+                                  <div className="bg-gray-50 p-2 rounded border overflow-auto">
+                                    <MathTex inline className="whitespace-nowrap" tex={toXi} />
+                                  </div>
+                                  <div className="text-xs text-gray-600 flex flex-wrap gap-2 items-center">
+                                    {mapping.map(m => {
+                                      const label = m.label.replace(/ /g, '~');
+                                      return (
+                                        <span key={m.idx} className="px-2 py-[2px] rounded border bg-gray-50">
+                                          <MathTex tex={`X_{${m.idx}} = \\text{${label}}`} />
+                                        </span>
+                                      );
+                                    })}
+                                  </div>
+                                </>
+                              );
+                            })()}
+                            <div className="text-xs text-gray-700">
+                              Variabel signifikan: {Object.entries(selectedRegionData.equation.coefficients).filter(([key, c]) => key !== 'intercept' && c.significant).length} / {Object.keys(selectedRegionData.equation.coefficients).filter(k => k !== 'intercept').length}
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="text-sm text-muted-foreground">Pilih wilayah untuk melihat ringkasan persamaan.</div>
+                        )}
+                      </div>
+
+                      {/* Ringkasan tab Wilayah dan Interpretasi */}
+                      <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-4">
+                        {/* Ringkasan Wilayah */}
+                        <div className="p-4 rounded-lg border bg-white">
+                          <div className="text-sm font-semibold mb-2">Ringkasan Wilayah</div>
+                          {selectedRegion ? (
+                            regionData ? (
+                              <div className="space-y-2 text-sm">
+                                <div className="grid grid-cols-2 gap-2">
+                                  <div className="p-2 bg-blue-50 rounded">
+                                    <div className="text-xs text-blue-700">Kasus</div>
+                                    <div className="text-base font-semibold text-blue-700">{formatNum(regionData.Penemuan)}</div>
+                                  </div>
+                                  <div className="p-2 bg-emerald-50 rounded">
+                                    <div className="text-xs text-emerald-700">Gizi Kurang</div>
+                                    <div className="text-base font-semibold text-emerald-700">{formatInt(regionData.GiziKurang)}</div>
+                                  </div>
+                                  <div className="p-2 bg-cyan-50 rounded">
+                                    <div className="text-xs text-cyan-700">IMD</div>
+                                    <div className="text-base font-semibold text-cyan-700">{formatPct(regionData.IMD, 2)}</div>
+                                  </div>
+                                  <div className="p-2 bg-orange-50 rounded">
+                                    <div className="text-xs text-orange-700">Rokok/Kapita</div>
+                                    <div className="text-base font-semibold text-orange-700">{formatDec(regionData.RokokPerkapita, 3)}</div>
+                                  </div>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="text-sm text-muted-foreground">Data wilayah tidak ditemukan.</div>
+                            )
+                          ) : (
+                            <div className="text-sm text-muted-foreground">Pilih wilayah pada peta untuk melihat ringkasan.</div>
+                          )}
+                        </div>
+
+                        {/* Ringkasan Interpretasi */}
+                        <div className="p-4 rounded-lg border bg-white">
+                          <div className="text-sm font-semibold mb-2">Ringkasan Interpretasi</div>
+                          {selectedRegionData?.equation ? (
+                            (() => {
+                              const simple = createSimpleInterpretation(selectedRegionData.equation);
+                              const risk = simple.significantFactors.filter(f => f.effect === 'increase').length;
+                              const prot = simple.significantFactors.filter(f => f.effect === 'decrease').length;
+                              return (
+                                <div className="space-y-2 text-sm">
+                                  <div className="line-clamp-3 text-muted-foreground">{simple.summary}</div>
+                                  <div className="flex gap-2 text-xs">
+                                    <span className="px-2 py-1 rounded bg-red-50 text-red-700">Risiko: {risk}</span>
+                                    <span className="px-2 py-1 rounded bg-green-50 text-green-700">Protektif: {prot}</span>
+                                    <span className="px-2 py-1 rounded bg-gray-50 text-gray-700">Total signifikan: {simple.significantFactors.length}</span>
+                                  </div>
+                                </div>
+                              );
+                            })()
+                          ) : (
+                            <div className="text-sm text-muted-foreground">Pilih wilayah untuk melihat ringkasan interpretasi.</div>
+                          )}
+                        </div>
                       </div>
                     </CardContent>
                   </Card>

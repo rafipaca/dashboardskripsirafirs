@@ -1,4 +1,4 @@
-import WebStory from "@/components/story/WebStory";
+import WebStoryNew from "@/components/story/WebStoryNew";
 import { webStoryData } from "@/lib/data/webstory";
 
 export const metadata = {
@@ -8,7 +8,7 @@ export const metadata = {
 export default function WebStoryPage() {
   return (
     <main className="min-h-screen">
-      <WebStory data={webStoryData} />
+      <WebStoryNew data={webStoryData} />
     </main>
   );
 }

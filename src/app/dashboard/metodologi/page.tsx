@@ -3,6 +3,7 @@
 import Link from "next/link";
 
 import { AppRoutes } from "@/utils/router";
+import MathTex from "@/components/ui/MathTex";
 
 export default function MethodologyPage() {
   return (
@@ -24,16 +25,16 @@ export default function MethodologyPage() {
         
         {/* Methodology Content */}
         <div className="space-y-6">
-          {/* Overview Card */}
+          {/* Approach Card */}
           <div className="about-main-card">
             <div className="about-card-header">
-              <h2 className="about-card-title">Metodologi Penelitian</h2>
+              <h2 className="about-card-title">Pendekatan Metodologi</h2>
             </div>
             <div className="about-card-content">
               <p className="about-text">
-                Penelitian ini menggunakan model Geographically Weighted Negative Binomial Regression (GWNBR)
-                untuk menganalisis pola spasial dari kasus pneumonia balita di Pulau Jawa tahun 2023. 
-                Analisis dilakukan pada tingkat kabupaten/kota dengan mempertimbangkan heterogenitas spasial.
+                Analisis dalam dashboard ini menggunakan pendekatan statistik spasial yang sistematis untuk memastikan hasil yang valid dan dapat
+                diandalkan. Metodologi ini dirancang untuk mengidentifikasi pola geografis dan faktor risiko pneumonia balita secara akurat di
+                119 kabupaten/kota di Pulau Jawa.
               </p>
             </div>
           </div>
@@ -41,18 +42,13 @@ export default function MethodologyPage() {
           {/* GWNBR Model Card */}
           <div className="about-main-card">
             <div className="about-card-header">
-              <h2 className="about-card-title">Geographically Weighted Negative Binomial Regression (GWNBR)</h2>
+              <h2 className="about-card-title">Model Analisis Utama: Geographically Weighted Negative Binomial Regression (GWNBR)</h2>
             </div>
             <div className="about-card-content">
-              <p className="about-text">
-                GWNBR merupakan pengembangan dari model Negative Binomial Regression yang memperhitungkan heterogenitas spasial. 
-                Model ini cocok digunakan untuk data cacah (count data) yang mengalami overdispersi, dimana varians data lebih besar dari mean.
-              </p>
-              
-              <p className="about-text">
-                Pada model GWNBR, parameter regresi dapat bervariasi untuk setiap lokasi geografis, sehingga kita dapat melihat bagaimana 
-                pengaruh variabel independen terhadap variabel dependen berbeda-beda di setiap lokasi geografis di Pulau Jawa.
-              </p>
+              <ol className="about-list list-decimal pl-6">
+                <li><strong>Overdispersi:</strong> Data jumlah kasus sering memiliki varians lebih besar dari rata-rata. GWNBR dirancang untuk kondisi ini, berbeda dengan Poisson standar.</li>
+                <li><strong>Heterogenitas Spasial:</strong> Pengaruh faktor risiko dapat berbeda antarlokasi. GWNBR menghasilkan koefisien lokal untuk tiap kabupaten/kota.</li>
+              </ol>
             </div>
           </div>
 
@@ -62,35 +58,57 @@ export default function MethodologyPage() {
               <h2 className="about-card-title">Model Matematika GWNBR</h2>
             </div>
             <div className="about-card-content">
-              <p className="about-text">
-                Model GWNBR untuk kasus pneumonia balita dapat dinyatakan dalam bentuk:
-              </p>
               <div className="about-dataset-card">
-                <div className="methodology-formula-content" style={{ 
-                  fontFamily: 'monospace', 
-                  fontSize: '16px', 
-                  lineHeight: '1.6',
+                <div className="methodology-formula-content" style={{
                   padding: '16px',
                   backgroundColor: '#f8f9fa',
                   border: '1px solid #e9ecef',
                   borderRadius: '8px',
                   margin: '12px 0'
                 }}>
-                  Y<sub>i</sub> ~ NB(μ<sub>i</sub>, α)<br/>
-                  ln(μ<sub>i</sub>) = β<sub>0</sub>(u<sub>i</sub>, v<sub>i</sub>) + β<sub>1</sub>(u<sub>i</sub>, v<sub>i</sub>)X<sub>1i</sub> + β<sub>2</sub>(u<sub>i</sub>, v<sub>i</sub>)X<sub>2i</sub> + β<sub>3</sub>(u<sub>i</sub>, v<sub>i</sub>)X<sub>3i</sub> + β<sub>4</sub>(u<sub>i</sub>, v<sub>i</sub>)X<sub>4i</sub>
+                  <MathTex tex={"Y_i \\sim \\text{NB}(\\mu_i, \\alpha(u_i, v_i))"} />
+                  <MathTex tex={"\\ln(\\mu_i) = \\beta_0(u_i, v_i) + \\beta_1(u_i, v_i) X_{1i} + \\beta_2(u_i, v_i) X_{2i} + \\beta_3(u_i, v_i) X_{3i} + \\beta_4(u_i, v_i) X_{4i} + \\beta_5(u_i, v_i) X_{5i} + \\beta_6(u_i, v_i) X_{6i}"} />
                 </div>
-                <p className="about-text">
-                  <strong>Dimana:</strong><br/>
-                  Y<sub>i</sub> = jumlah kasus pneumonia balita di kabupaten/kota ke-i<br/>
-                  μ<sub>i</sub> = nilai ekspektasi dari Y<sub>i</sub><br/>
-                  α = parameter dispersi<br/>
-                  (u<sub>i</sub>, v<sub>i</sub>) = koordinat geografis kabupaten/kota ke-i<br/>
-                  β<sub>0</sub>(u<sub>i</sub>, v<sub>i</sub>) = parameter intercept di lokasi ke-i<br/>
-                  X<sub>1i</sub> = persentase rumah tangga dengan sanitasi layak di lokasi ke-i<br/>
-                  X<sub>2i</sub> = persentase rumah tangga dengan air bersih di lokasi ke-i<br/>
-                  X<sub>3i</sub> = kepadatan penduduk di lokasi ke-i<br/>
-                  X<sub>4i</sub> = jumlah balita di lokasi ke-i
-                </p>
+                <div className="about-dataset-card">
+                  <table className="about-table">
+                    <thead>
+                      <tr>
+                        <th>Simbol</th>
+                        <th>Deskripsi</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td className="font-medium">Y<sub>i</sub></td>
+                        <td>Jumlah kasus pneumonia balita di lokasi ke-i.</td>
+                      </tr>
+                      <tr>
+                        <td className="font-medium">μ<sub>i</sub></td>
+                        <td>Perkiraan rata-rata kasus pneumonia di lokasi ke-i.</td>
+                      </tr>
+                      <tr>
+                        <td className="font-medium">α(u<sub>i</sub>, v<sub>i</sub>)</td>
+                        <td>Parameter dispersi yang bervariasi secara lokal.</td>
+                      </tr>
+                      <tr>
+                        <td className="font-medium">(u<sub>i</sub>, v<sub>i</sub>)</td>
+                        <td>Koordinat geografis (lintang, bujur) dari lokasi ke-i.</td>
+                      </tr>
+                      <tr>
+                        <td className="font-medium">β<sub>0</sub>(u<sub>i</sub>, v<sub>i</sub>)</td>
+                        <td>Intersep yang spesifik lokasi.</td>
+                      </tr>
+                      <tr>
+                        <td className="font-medium">β<sub>k</sub>(u<sub>i</sub>, v<sub>i</sub>)</td>
+                        <td>Koefisien variabel prediktor ke-k yang spesifik lokasi.</td>
+                      </tr>
+                      <tr>
+                        <td className="font-medium">X<sub>1i</sub>..X<sub>6i</sub></td>
+                        <td>Nilai variabel-variabel prediktor di lokasi ke-i.</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           </div>
@@ -98,40 +116,16 @@ export default function MethodologyPage() {
           {/* Analysis Steps Card */}
           <div className="about-main-card">
             <div className="about-card-header">
-              <h2 className="about-card-title">Tahapan Analisis</h2>
+              <h2 className="about-card-title">Alur Analisis Data</h2>
             </div>
             <div className="about-card-content">
-              <ol className="about-list" style={{ listStyleType: 'decimal', paddingLeft: '20px' }}>
-                <li>
-                  <strong>Eksplorasi Data Awal:</strong> Melakukan eksplorasi karakteristik data pneumonia balita dan variabel prediktor di 119 kabupaten/kota Pulau Jawa.
-                </li>
-                <li>
-                  <strong>Pengujian Multikolinearitas:</strong> Menguji korelasi antar variabel independen menggunakan VIF (Variance Inflation Factor) dengan batas VIF &lt; 10.
-                </li>
-                <li>
-                  <strong>Pemodelan Regresi Poisson Global:</strong> Melakukan pemodelan awal dengan regresi Poisson untuk seluruh wilayah Pulau Jawa.
-                </li>
-                <li>
-                  <strong>Pengujian Overdispersi:</strong> Menguji overdispersi menggunakan uji dispersi untuk menentukan kesesuaian model Poisson.
-                </li>
-                <li>
-                  <strong>Pemodelan Regresi Binomial Negatif Global:</strong> Mengatasi overdispersi dengan model Binomial Negatif global.
-                </li>
-                <li>
-                  <strong>Pengujian Dependensi Spasial:</strong> Menggunakan Indeks Moran&apos;s I untuk menguji autokorelasi spasial pada residual model.
-                </li>
-                <li>
-                  <strong>Pemodelan GWNBR:</strong> Menerapkan model GWNBR untuk menangani heterogenitas spasial di wilayah Pulau Jawa.
-                </li>
-                <li>
-                  <strong>Pemilihan Fungsi Pembobot dan Bandwidth:</strong> Menggunakan fungsi kernel Gaussian dengan pemilihan bandwidth optimal melalui metode Cross Validation (CV).
-                </li>
-                <li>
-                  <strong>Evaluasi Model:</strong> Membandingkan model menggunakan AIC, log-likelihood, dan koefisien determinasi.
-                </li>
-                <li>
-                  <strong>Interpretasi dan Visualisasi:</strong> Menginterpretasikan koefisien lokal dan membuat peta distribusi spasial parameter.
-                </li>
+              <ol className="about-list list-decimal pl-6">
+                <li><strong>Uji Dependensi Spasial:</strong> Indeks Moran&rsquo;s I untuk membuktikan adanya pola geografis (klaster) pada kasus pneumonia.</li>
+                <li><strong>Pemeriksaan Multikolinearitas:</strong> Variance Inflation Factor (VIF) dengan batas VIF &lt; 10.</li>
+                <li><strong>Pemodelan Global (Baseline):</strong> Regresi Binomial Negatif (NBR) sebagai model dasar dan uji signifikansi variabel secara umum.</li>
+                <li><strong>Uji Heterogenitas Spasial:</strong> Uji Breusch-Pagan untuk mengonfirmasi ketidakseragaman pengaruh faktor antar lokasi.</li>
+                <li><strong>Pemodelan Lokal (GWNBR):</strong> Menggunakan kernel <em>Adaptive Bisquare</em> dengan <em>bandwidth</em> optimum via Cross-Validation (CV).</li>
+                <li><strong>Evaluasi & Interpretasi:</strong> Bandingkan kinerja menggunakan AIC dan interpretasikan koefisien lokal yang signifikan (uji-t).</li>
               </ol>
             </div>
           </div>
@@ -142,98 +136,66 @@ export default function MethodologyPage() {
               <h2 className="about-card-title">Variabel Penelitian</h2>
             </div>
             <div className="about-card-content">
-              <div className="about-dataset-card">
-                <h3 className="about-dataset-title">Variabel Dependen (Y)</h3>
-                <p className="about-text">
-                  <strong>Jumlah kasus pneumonia balita</strong> di 119 kabupaten/kota di Pulau Jawa tahun 2023.
-                  Data berupa variabel cacah (count data) yang menunjukkan frekuensi kejadian pneumonia pada balita.
-                </p>
-              </div>
-              
-              <div className="about-dataset-card">
-                <h3 className="about-dataset-title">Variabel Independen</h3>
-                <ul className="about-list">
-                  <li><strong>X₁:</strong> Persentase rumah tangga dengan sanitasi layak (%)</li>
-                  <li><strong>X₂:</strong> Persentase rumah tangga dengan akses air bersih (%)</li>
-                  <li><strong>X₃:</strong> Kepadatan penduduk (jiwa/km²)</li>
-                  <li><strong>X₄:</strong> Jumlah balita (jiwa)</li>
-                </ul>
-                <p className="about-text">
-                  Semua variabel independen telah diuji asumsi normalitas dan linearitas sebelum digunakan dalam model.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Spatial Data Card */}
-          <div className="about-main-card">
-            <div className="about-card-header">
-              <h2 className="about-card-title">Data Spasial</h2>
-            </div>
-            <div className="about-card-content">
-              <p className="about-text">
-                Penelitian menggunakan data spasial berformat GeoJSON yang mencakup batas administrasi 119 kabupaten/kota di Pulau Jawa.
-                Data spasial digunakan untuk:
-              </p>
-              <ul className="about-list">
-                <li>Menentukan matriks pembobot spasial berdasarkan kedekatan geografis</li>
-                <li>Menghitung jarak antar lokasi untuk fungsi kernel</li>
-                <li>Visualisasi hasil analisis dalam bentuk peta tematik</li>
-                <li>Mengidentifikasi pola klaster spasial kasus pneumonia balita</li>
-              </ul>
-            </div>
-          </div>
-
-          {/* Data Sources Card */}
-          <div className="about-main-card">
-            <div className="about-card-header">
-              <h2 className="about-card-title">Sumber Data</h2>
-            </div>
-            <div className="about-card-content">
-              <p className="about-text">
-                Data yang digunakan dalam penelitian ini berasal dari:
-              </p>
-              <ul className="about-list">
-                <li><strong>Data Kesehatan:</strong> Profil Kesehatan Indonesia, Kementerian Kesehatan RI (2023)</li>
-                <li><strong>Data Demografi dan Sosial:</strong> Survei Sosial Ekonomi Nasional (Susenas), BPS (2023)</li>
-                <li><strong>Data Sanitasi dan Air Bersih:</strong> Statistik Kesejahteraan Rakyat, BPS (2023)</li>
-                <li><strong>Data Spasial:</strong> Batas administrasi kabupaten/kota, Geoportal Indonesia</li>
-              </ul>
-            </div>
-          </div>
-
-          {/* Analysis Results Card */}
-          <div className="about-main-card">
-            <div className="about-card-header">
-              <h2 className="about-card-title">Hasil Analisis</h2>
-            </div>
-            <div className="about-card-content">
-              <p className="about-text">
-                Hasil analisis GWNBR menghasilkan koefisien regresi yang bervariasi untuk setiap lokasi, menunjukkan:
-              </p>
-              <ul className="about-list">
-                <li>Heterogenitas spasial dalam faktor risiko pneumonia balita</li>
-                <li>Pola geografis pengaruh variabel sanitasi, air bersih, kepadatan penduduk, dan jumlah balita</li>
-                <li>Identifikasi wilayah dengan risiko tinggi yang memerlukan intervensi khusus</li>
-                <li>Evaluasi efektivitas model melalui perbandingan dengan model global</li>
-              </ul>
+              <table className="about-table">
+                <thead>
+                  <tr>
+                    <th>Variabel</th>
+                    <th>Deskripsi</th>
+                    <th>Tipe</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td className="font-medium">Jumlah Kasus Pneumonia (Y)</td>
+                    <td>[Variabel Dependen] Jumlah kasus pneumonia pada balita.</td>
+                    <td>Cacah</td>
+                  </tr>
+                  <tr>
+                    <td className="font-medium">Jumlah Balita Gizi Kurang (X1)</td>
+                    <td>[Variabel Independen] Proksi status gizi anak.</td>
+                    <td>Cacah</td>
+                  </tr>
+                  <tr>
+                    <td className="font-medium">Persentase Inisiasi Menyusui Dini (X2)</td>
+                    <td>[Variabel Independen] Proksi perilaku kesehatan ibu dan bayi.</td>
+                    <td>Persentase</td>
+                  </tr>
+                  <tr>
+                    <td className="font-medium">Rata-rata Konsumsi Rokok (X3)</td>
+                    <td>[Variabel Independen] Proksi paparan polusi udara dalam rumah.</td>
+                    <td>Kontinyu</td>
+                  </tr>
+                  <tr>
+                    <td className="font-medium">Kepadatan Penduduk (X4)</td>
+                    <td>[Variabel Independen] Proksi risiko penularan di tingkat komunitas.</td>
+                    <td>Kontinyu</td>
+                  </tr>
+                  <tr>
+                    <td className="font-medium">Akses Air Minum Layak (X5)</td>
+                    <td>[Variabel Independen] Proksi kondisi higienitas lingkungan.</td>
+                    <td>Persentase</td>
+                  </tr>
+                  <tr>
+                    <td className="font-medium">Akses Sanitasi Layak (X6)</td>
+                    <td>[Variabel Independen] Proksi kondisi higienitas lingkungan.</td>
+                    <td>Persentase</td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </div>
 
           {/* Software Tools Card */}
           <div className="about-main-card">
             <div className="about-card-header">
-              <h2 className="about-card-title">Perangkat Lunak dan Analisis</h2>
+              <h2 className="about-card-title">Perangkat Lunak Analisis</h2>
             </div>
             <div className="about-card-content">
-              <p className="about-text">
-                Analisis statistik dan spasial dilakukan menggunakan:
-              </p>
               <ul className="about-list">
-                <li><strong>R Studio:</strong> Analisis statistik dengan paket spgwr, GWmodel, spdep, MASS</li>
-                <li><strong>QGIS:</strong> Pengolahan data spasial dan visualisasi peta</li>
-                <li><strong>Next.js & React:</strong> Pengembangan dashboard interaktif untuk visualisasi hasil</li>
-                <li><strong>Leaflet:</strong> Implementasi peta interaktif pada dashboard</li>
+                <li><strong>R Studio:</strong> Paket utama: GWmodel, spgwr, spdep, AER.</li>
+                <li><strong>QGIS:</strong> Pengolahan data spasial.</li>
+                <li><strong>Next.js & React:</strong> Pengembangan dashboard.</li>
+                <li><strong>Leaflet:</strong> Peta interaktif.</li>
               </ul>
             </div>
           </div>

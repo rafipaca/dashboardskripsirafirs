@@ -5,12 +5,18 @@ export type StorySectionType =
   | "methodology"
   | "key_findings"
   | "practical_application"
-  | "conclusion";
+  | "conclusion"
+  | "map";
 
 export interface StorySection {
   type: StorySectionType;
   title: string;
-  content: string; // markdown-like content
+  content?: string; // markdown-like content - optional for map type
+  description?: string; // for map type
+  defaultLayer?: string; // for map type
+  layout?: string; // for key_findings type
+  imageSrc?: string; // for key_findings type  
+  imageAlt?: string; // for key_findings type
 }
 
 export interface WebStoryMetadata {
