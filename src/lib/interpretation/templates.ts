@@ -37,7 +37,7 @@ export function getSignificantFactorTemplate(factor: FactorInterpretation, regio
   const lebihTinggiRendah = factor.effect === 'increase' ? 'lebih tinggi' : 'lebih rendah';
   
   // Hitung persentase perubahan dari koefisien (exp(β) - 1) * 100
-  const percentageChange = ((Math.exp(factor.coefficient) - 1) * 100).toFixed(1);
+  const percentageChange = ((Math.exp(factor.coefficient) - 1) * 100).toFixed(4);
   
   let variableDescription = '';
   let implikasiPrioritas = '';
@@ -143,7 +143,7 @@ export function generateSummary(interpretation: SimpleInterpretation): string {
   let text = `Ringkasan Diagnosis Spasial — Di ${regionName}, terdapat ${significantFactors.length} faktor yang berpengaruh signifikan terhadap kasus pneumonia balita. `;
 
   if (dominantFactor) {
-    const pct = ((Math.exp(dominantFactor.coefficient) - 1) * 100).toFixed(1);
+    const pct = ((Math.exp(dominantFactor.coefficient) - 1) * 100).toFixed(4);
     text += `Faktor dominan adalah ${getVarName(dominantFactor.variable)} yang ` +
             `${dominantFactor.effect === 'increase' ? 'meningkatkan' : 'menurunkan'} risiko (β = ${dominantFactor.coefficient.toFixed(4)}, ≈ ${pct}%). `;
   }

@@ -4,9 +4,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { 
   MapPinIcon, 
   UsersIcon, 
-  CheckCircleIcon
+  CheckCircleIcon,
+  ActivityIcon
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useResearchData } from "@/hooks/useResearchData";
+import { countJavaProvincesFromRawData } from "@/lib/utils/regionUtils";
 
 interface ResearchSummaryCardProps {
   title: string;
@@ -71,48 +74,75 @@ const ResearchSummaryCard = ({
 };
 
 export default function ResearchSummaryCards() {
+  const { rawData } = useResearchData();
+  
+  // Hitung data aktual dari hooks berdasarkan data yang tersedia
+  const totalRegions = rawData.length;
+  
+  // Hitung jumlah provinsi Pulau Jawa secara akurat (whitelist 6 provinsi)
+  const totalProvinces = countJavaProvincesFromRawData(rawData);
+  
+  // Hitung total kasus penemuan
+  const totalCases = rawData.reduce((sum, item) => sum + item.Penemuan, 0);
+  
+  // Cari nilai tertinggi untuk Gizi Kurang, Kepadatan, dan Rokok
+  const maxGiziKurang = rawData.reduce((max, item) => 
+    item.GiziKurang > max.value ? { value: item.GiziKurang, region: item.NAMOBJ } : max, 
+    { value: 0, region: "" }
+  );
+
+  const maxKepadatan = rawData.reduce((max, item) => 
+    item.Kepadatan > max.value ? { value: item.Kepadatan, region: item.NAMOBJ } : max, 
+    { value: 0, region: "" }
+  );
+
+  const maxRokok = rawData.reduce((max, item) => 
+    item.RokokPerkapita > max.value ? { value: item.RokokPerkapita, region: item.NAMOBJ } : max, 
+    { value: 0, region: "" }
+  );
+
   type SummaryItem = Pick<ResearchSummaryCardProps, 'title' | 'value' | 'description' | 'icon' | 'variant' | 'showProgress' | 'progressValue' | 'maxValue'>;
   const summaryData: SummaryItem[] = [
     {
-      title: "Kabupaten/Kota",
-      value: "119",
-      description: "Lingkup Penelitian",
+      title: "Balita Gizi Kurang",
+      value: maxGiziKurang.value.toLocaleString(),
+      description: maxGiziKurang.region,
+      icon: <UsersIcon className="h-4 w-4" />,
+      variant: "default" as "default" | "success" | "warning" | "error"
+    },
+    {
+      title: "Kepadatan Tertinggi",
+      value: maxKepadatan.value.toLocaleString(),
+      description: maxKepadatan.region,
+      icon: <MapPinIcon className="h-4 w-4" />,
+      variant: "default" as "default" | "success" | "warning" | "error"
+    },
+    {
+      title: "Rokok Tertinggi",
+      value: maxRokok.value.toLocaleString(),
+      description: maxRokok.region,
+      icon: <ActivityIcon className="h-4 w-4" />,
+      variant: "default" as "default" | "success" | "warning" | "error"
+    },
+    {
+      title: "Total Kasus",
+      value: totalCases.toLocaleString(),
+      description: "Kasus Penemuan",
+      icon: <UsersIcon className="h-4 w-4" />,
+      variant: "default" as "default" | "success" | "warning" | "error"
+    },
+    {
+      title: "Wilayah Penelitian",
+      value: totalRegions,
+      description: "Kabupaten/Kota",
       icon: <MapPinIcon className="h-4 w-4" />,
       variant: "default" as "default" | "success" | "warning" | "error"
     },
     {
       title: "Provinsi",
-      value: "7",
-      description: "Cakupan Geografis",
+      value: totalProvinces,
+      description: "Di Pulau Jawa",
       icon: <MapPinIcon className="h-4 w-4" />,
-      variant: "default" as "default" | "success" | "warning" | "error"
-    },
-    {
-      title: "Total Kasus",
-      value: "330.222",
-      description: "Skala Masalah",
-      icon: <UsersIcon className="h-4 w-4" />,
-      variant: "default" as "default" | "success" | "warning" | "error"
-    },
-    {
-      title: "Balita Gizi Kurang",
-      value: "250.111",
-      description: "Besaran Risiko Kunci",
-      icon: <UsersIcon className="h-4 w-4" />,
-      variant: "default" as "default" | "success" | "warning" | "error"
-    },
-    {
-  title: "Kasus Tertinggi",
-  value: "11.684",
-  description: "Jakarta Barat",
-      icon: <MapPinIcon className="h-4 w-4" />,
-      variant: "default" as "default" | "success" | "warning" | "error"
-    },
-    {
-      title: "Kelompok Risiko",
-      value: "6",
-      description: "Hasil Analisis",
-      icon: <CheckCircleIcon className="h-4 w-4" />,
       variant: "default" as "default" | "success" | "warning" | "error"
     }
   ];

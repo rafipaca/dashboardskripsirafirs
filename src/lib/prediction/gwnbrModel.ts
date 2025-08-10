@@ -198,20 +198,26 @@ export function generateEquationDisplay(
  */
 function generateEquationString(coefficients: GWNBRCoefficient): string {
   const clampToZero = (v: number) => (Math.abs(v) < 1e-7 ? 0 : v);
-  const toFixed7 = (v: number) => clampToZero(v).toFixed(7);
-  const formatCoef = (value: number, variable: string) => {
+  const toFixed7 = (v: number) => {
+    const val = clampToZero(v);
+    return parseFloat(val.toFixed(7)).toString();
+  };
+  const formatCoef = (value: number, variable: string, zValue: number) => {
     const v = clampToZero(value);
     const sign = v >= 0 ? '+' : '-';
-    return `${sign}${Math.abs(v).toFixed(7)}×${variable}`;
+    const formattedValue = parseFloat(Math.abs(v).toFixed(7)).toString();
+    const isSignificant = Math.abs(zValue || 0) > 1.96;
+    const variableWithExponent = isSignificant ? `${variable}^*` : variable;
+    return `${sign}${formattedValue}${variableWithExponent}`;
   };
   
   return `ln(μ) = ${toFixed7(coefficients.Intercept)} ` +
-    `${formatCoef(coefficients.GiziKurangKoef, 'GiziKurang')} ` +
-    `${formatCoef(coefficients.IMDKoef, 'IMD')} ` +
-    `${formatCoef(coefficients.RokokPerkapitaKoef, 'Rokok')} ` +
-    `${formatCoef(coefficients.KepadatanKoef, 'Kepadatan')} ` +
-    `${formatCoef(coefficients.AirMinumKoef, 'AirMinum')} ` +
-    `${formatCoef(coefficients.SanitasiKoef, 'Sanitasi')}`;
+    `${formatCoef(coefficients.GiziKurangKoef, 'X₁', coefficients.GiziKurangZ || 0)}` +
+    `${formatCoef(coefficients.IMDKoef, 'X₂', coefficients.IMDZ || 0)}` +
+    `${formatCoef(coefficients.RokokPerkapitaKoef, 'X₃', coefficients.RokokPerkapitaZ || 0)}` +
+    `${formatCoef(coefficients.KepadatanKoef, 'X₄', coefficients.KepadatanZ || 0)}` +
+    `${formatCoef(coefficients.AirMinumKoef, 'X₅', coefficients.AirMinumZ || 0)}` +
+    `${formatCoef(coefficients.SanitasiKoef, 'X₆', coefficients.SanitasiZ || 0)}`;
 }
 
 /**
@@ -231,7 +237,7 @@ export function interpretVariable(
   else if (absCoef < 0.5) magnitude = 'sedang';
   else magnitude = 'tinggi';
   
-  const percentChange = `${((Math.exp(coefficient) - 1) * 100).toFixed(2)}%`;
+  const percentChange = `${((Math.exp(coefficient) - 1) * 100).toFixed(4)}%`;
   
   const variableLabels: Record<string, string> = {
     gizi_kurang: 'Gizi Kurang',

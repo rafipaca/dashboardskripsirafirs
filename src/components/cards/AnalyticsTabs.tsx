@@ -70,7 +70,7 @@ export default function AnalyticsTabs({ selectedRegion }: AnalyticsTabsProps) {
     : 6;
   const nfID = (opts?: Intl.NumberFormatOptions) => new Intl.NumberFormat('id-ID', opts);
   const formatNum = (val?: number | null) => (typeof val === 'number' ? nfID().format(val) : 'N/A');
-  const formatPct = (val?: number | null, digits: number = 2) =>
+  const formatPct = (val?: number | null, digits: number = 4) =>
     (typeof val === 'number' ? `${nfID({ minimumFractionDigits: digits, maximumFractionDigits: digits }).format(val)}%` : 'N/A');
   const formatDec = (val?: number | null, digits: number = 3) =>
     (typeof val === 'number' ? nfID({ minimumFractionDigits: digits, maximumFractionDigits: digits }).format(val) : 'N/A');
@@ -180,47 +180,54 @@ export default function AnalyticsTabs({ selectedRegion }: AnalyticsTabsProps) {
 
                       {/* Ringkasan Persamaan (full width di atas) */}
                       <div className="mt-6 p-4 rounded-lg border bg-white">
-                        <div className="text-sm font-semibold mb-2">Ringkasan Persamaan</div>
+                        <div className="text-sm font-semibold mb-2 text-center">Ringkasan Persamaan</div>
                         {selectedRegionData?.equation ? (
-                          <div className="space-y-2 text-sm">
-                            {(() => {
-                              const mapping = [
-                                { idx: 1, pattern: 'GiziKurang', label: 'Gizi Kurang' },
-                                { idx: 2, pattern: 'IMD', label: 'IMD' },
-                                { idx: 3, pattern: 'Rokok', label: 'Rokok Per Kapita' },
-                                { idx: 4, pattern: 'Kepadatan', label: 'Kepadatan Penduduk' },
-                                { idx: 5, pattern: 'AirMinum', label: 'Air Minum Layak' },
-                                { idx: 6, pattern: 'Sanitasi', label: 'Sanitasi Layak' },
-                              ];
-                              const base = selectedRegionData.equation.equation
-                                // Normalize ln(mu) variants to KaTeX form
-                                .replace(/ln\s*\((μ|µ|mu)\)/gi, '\\ln(\\mu)')
-                                .replace(/×/g, '\\cdot ');
-                              const toXi = mapping.reduce((acc, m) => acc.replace(new RegExp(m.pattern, 'g'), `X_{${m.idx}}`), base);
-                              return (
-                                <>
-                                  <div className="bg-gray-50 p-2 rounded border overflow-auto">
-                                    <MathTex inline className="whitespace-nowrap" tex={toXi} />
-                                  </div>
-                                  <div className="text-xs text-gray-600 flex flex-wrap gap-2 items-center">
-                                    {mapping.map(m => {
-                                      const label = m.label.replace(/ /g, '~');
-                                      return (
-                                        <span key={m.idx} className="px-2 py-[2px] rounded border bg-gray-50">
-                                          <MathTex tex={`X_{${m.idx}} = \\text{${label}}`} />
-                                        </span>
-                                      );
-                                    })}
-                                  </div>
-                                </>
-                              );
-                            })()}
-                            <div className="text-xs text-gray-700">
+                          <div className="space-y-3 text-sm">
+                            <div className="bg-gray-50 p-3 rounded-lg border">
+                              <div className="flex flex-col items-center justify-center">
+                                <div className="max-w-full overflow-x-auto">
+                                  <span className="inline-block min-w-max whitespace-nowrap text-sm sm:text-base">
+                                    <MathTex tex={(() => {
+                                      const mapping = [
+                                        { pattern: 'GiziKurang', idx: 1 },
+                                        { pattern: 'IMD', idx: 2 },
+                                        { pattern: 'Rokok', idx: 3 },
+                                        { pattern: 'Kepadatan', idx: 4 },
+                                        { pattern: 'AirMinum', idx: 5 },
+                                        { pattern: 'Sanitasi', idx: 6 },
+                                      ];
+                                      let tex = selectedRegionData.equation.equation
+                                        .replace(/ln\s*\((μ|µ|mu)\)/gi, '\\ln(\\mu)')
+                                        .replace(/×/g, '\\cdot ');
+                                      mapping.forEach(m => {
+                                        tex = tex.replace(new RegExp(m.pattern, 'g'), `X_{${m.idx}}`);
+                                      });
+                                      return tex;
+                                    })()} />
+                                  </span>
+                                </div>
+                                <div className="mt-2 flex flex-wrap gap-1 justify-center text-xs text-gray-600">
+                                  {[
+                                    { idx: 1, label: 'Gizi Kurang' },
+                                    { idx: 2, label: 'IMD' },
+                                    { idx: 3, label: 'Rokok Per Kapita' },
+                                    { idx: 4, label: 'Kepadatan Penduduk' },
+                                    { idx: 5, label: 'Air Minum Layak' },
+                                    { idx: 6, label: 'Sanitasi Layak' },
+                                  ].map(({ idx, label }) => (
+                                    <span key={idx} className="px-1.5 py-0.5 rounded border bg-white text-xs">
+                                      <MathTex tex={`X_{${idx}} = \\text{${label.replace(/ /g, '~')}}`} />
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
+                            <div className="text-xs text-gray-700 text-center">
                               Variabel signifikan: {Object.entries(selectedRegionData.equation.coefficients).filter(([key, c]) => key !== 'intercept' && c.significant).length} / {Object.keys(selectedRegionData.equation.coefficients).filter(k => k !== 'intercept').length}
                             </div>
                           </div>
                         ) : (
-                          <div className="text-sm text-muted-foreground">Pilih wilayah untuk melihat ringkasan persamaan.</div>
+                          <div className="text-sm text-muted-foreground text-center">Pilih wilayah untuk melihat ringkasan persamaan.</div>
                         )}
                       </div>
 
@@ -233,21 +240,21 @@ export default function AnalyticsTabs({ selectedRegion }: AnalyticsTabsProps) {
                             regionData ? (
                               <div className="space-y-2 text-sm">
                                 <div className="grid grid-cols-2 gap-2">
-                                  <div className="p-2 bg-blue-50 rounded">
-                                    <div className="text-xs text-blue-700">Kasus</div>
-                                    <div className="text-base font-semibold text-blue-700">{formatNum(regionData.Penemuan)}</div>
+                                  <div className="p-3 bg-white rounded-lg border shadow-sm">
+                                    <div className="text-xs font-medium text-muted-foreground">Kasus</div>
+                                    <div className="text-base font-semibold text-primary">{formatNum(regionData.Penemuan)}</div>
                                   </div>
-                                  <div className="p-2 bg-emerald-50 rounded">
-                                    <div className="text-xs text-emerald-700">Gizi Kurang</div>
-                                    <div className="text-base font-semibold text-emerald-700">{formatInt(regionData.GiziKurang)}</div>
+                                  <div className="p-3 bg-white rounded-lg border shadow-sm">
+                                    <div className="text-xs font-medium text-muted-foreground">Gizi Kurang</div>
+                                    <div className="text-base font-semibold text-primary">{formatInt(regionData.GiziKurang)}</div>
                                   </div>
-                                  <div className="p-2 bg-cyan-50 rounded">
-                                    <div className="text-xs text-cyan-700">IMD</div>
-                                    <div className="text-base font-semibold text-cyan-700">{formatPct(regionData.IMD, 2)}</div>
+                                  <div className="p-3 bg-white rounded-lg border shadow-sm">
+                                    <div className="text-xs font-medium text-muted-foreground">IMD</div>
+                                    <div className="text-base font-semibold text-primary">{formatPct(regionData.IMD, 2)}</div>
                                   </div>
-                                  <div className="p-2 bg-orange-50 rounded">
-                                    <div className="text-xs text-orange-700">Rokok/Kapita</div>
-                                    <div className="text-base font-semibold text-orange-700">{formatDec(regionData.RokokPerkapita, 3)}</div>
+                                  <div className="p-3 bg-white rounded-lg border shadow-sm">
+                                    <div className="text-xs font-medium text-muted-foreground">Rokok/Kapita</div>
+                                    <div className="text-base font-semibold text-primary">{formatDec(regionData.RokokPerkapita, 3)}</div>
                                   </div>
                                 </div>
                               </div>
@@ -313,33 +320,33 @@ export default function AnalyticsTabs({ selectedRegion }: AnalyticsTabsProps) {
                       regionData ? (
                         <div className="space-y-4">
                           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div className="p-4 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg border">
-                              <div className="text-sm font-medium text-blue-800">Kasus Pneumonia</div>
-                              <div className="text-2xl font-bold text-blue-600">{formatNum(regionData.Penemuan)}</div>
+                            <div className="p-4 rounded-lg border bg-white">
+                              <div className="text-sm font-medium text-muted-foreground">Kasus Pneumonia</div>
+                              <div className="text-2xl font-bold">{formatNum(regionData.Penemuan)}</div>
                             </div>
-                            <div className="p-4 bg-gradient-to-br from-emerald-50 to-green-50 rounded-lg border">
-                              <div className="text-sm font-medium text-emerald-800">Gizi Kurang</div>
-                              <div className="text-2xl font-bold text-emerald-600">{formatInt(regionData.GiziKurang)}</div>
+                            <div className="p-4 rounded-lg border bg-white">
+                              <div className="text-sm font-medium text-muted-foreground">Gizi Kurang</div>
+                              <div className="text-2xl font-bold">{formatInt(regionData.GiziKurang)}</div>
                             </div>
-                            <div className="p-4 bg-gradient-to-br from-cyan-50 to-sky-50 rounded-lg border">
-                              <div className="text-sm font-medium text-cyan-800">IMD</div>
-                              <div className="text-2xl font-bold text-cyan-600">{formatPct(regionData.IMD, 2)}</div>
+                            <div className="p-4 rounded-lg border bg-white">
+                              <div className="text-sm font-medium text-muted-foreground">IMD</div>
+                              <div className="text-2xl font-bold">{formatPct(regionData.IMD, 2)}</div>
                             </div>
-                            <div className="p-4 bg-gradient-to-br from-orange-50 to-amber-50 rounded-lg border">
-                              <div className="text-sm font-medium text-orange-800">Perokok/Kapita</div>
-                              <div className="text-2xl font-bold text-orange-600">{formatDec(regionData.RokokPerkapita, 3)}</div>
+                            <div className="p-4 rounded-lg border bg-white">
+                              <div className="text-sm font-medium text-muted-foreground">Perokok/Kapita</div>
+                              <div className="text-2xl font-bold">{formatDec(regionData.RokokPerkapita, 3)}</div>
                             </div>
-                            <div className="p-4 bg-gradient-to-br from-purple-50 to-violet-50 rounded-lg border">
-                              <div className="text-sm font-medium text-purple-800">Kepadatan Penduduk</div>
-                              <div className="text-2xl font-bold text-purple-600">{formatNum(regionData.Kepadatan)}<span className="text-base font-semibold"> jiwa/km²</span></div>
+                            <div className="p-4 rounded-lg border bg-white">
+                              <div className="text-sm font-medium text-muted-foreground">Kepadatan Penduduk</div>
+                              <div className="text-2xl font-bold">{formatNum(regionData.Kepadatan)}<span className="text-base font-semibold"> jiwa/km²</span></div>
                             </div>
-                            <div className="p-4 bg-gradient-to-br from-green-50 to-lime-50 rounded-lg border">
-                              <div className="text-sm font-medium text-green-800">Sanitasi Layak</div>
-                              <div className="text-2xl font-bold text-green-600">{formatPct(regionData.Sanitasi, 2)}</div>
+                            <div className="p-4 rounded-lg border bg-white">
+                              <div className="text-sm font-medium text-muted-foreground">Sanitasi Layak</div>
+                              <div className="text-2xl font-bold">{formatPct(regionData.Sanitasi, 2)}</div>
                             </div>
-                            <div className="p-4 bg-gradient-to-br from-blue-50 to-sky-50 rounded-lg border md:col-span-2">
-                              <div className="text-sm font-medium text-blue-800">Air Minum Layak</div>
-                              <div className="text-2xl font-bold text-blue-600">{formatPct(regionData.AirMinumLayak, 2)}</div>
+                            <div className="p-4 rounded-lg border bg-white">
+                              <div className="text-sm font-medium text-muted-foreground">Air Minum Layak</div>
+                              <div className="text-2xl font-bold">{formatPct(regionData.AirMinumLayak, 2)}</div>
                             </div>
                           </div>
                           <div className="p-4 bg-muted/30 rounded-lg">

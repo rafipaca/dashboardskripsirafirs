@@ -65,7 +65,7 @@ export class DataProcessor {
     return new Intl.NumberFormat('id-ID', {
       style: 'percent',
       minimumFractionDigits: 1,
-      maximumFractionDigits: 1,
+      maximumFractionDigits: 4,
     }).format(num / 100);
   }
 }

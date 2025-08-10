@@ -59,19 +59,41 @@ export default function OverviewCards() {
     ? Math.round((rawData.reduce((sum, item) => sum + item.Sanitasi, 0) / rawData.length) * 10) / 10
     : 0;
 
+  // Cari nilai tertinggi untuk Gizi Kurang, Kepadatan, dan Rokok
+  const maxGiziKurang = rawData.reduce((max, item) => 
+    item.GiziKurang > max.value ? { value: item.GiziKurang, region: item.NAMOBJ } : max, 
+    { value: 0, region: "" }
+  );
+
+  const maxKepadatan = rawData.reduce((max, item) => 
+    item.Kepadatan > max.value ? { value: item.Kepadatan, region: item.NAMOBJ } : max, 
+    { value: 0, region: "" }
+  );
+
+  const maxRokok = rawData.reduce((max, item) => 
+    item.RokokPerkapita > max.value ? { value: item.RokokPerkapita, region: item.NAMOBJ } : max, 
+    { value: 0, region: "" }
+  );
+
   // Data untuk kartu overview
   const overviewData = [
     {
-      title: "Kabupaten/Kota",
-      value: totalRegions,
-      description: "Wilayah Penelitian",
+      title: "Balita Gizi Kurang",
+      value: maxGiziKurang.value.toLocaleString(),
+      description: maxGiziKurang.region,
+      icon: <UsersIcon className="h-4 w-4 text-muted-foreground" />
+    },
+    {
+      title: "Kepadatan Tertinggi",
+      value: maxKepadatan.value.toLocaleString(),
+      description: maxKepadatan.region,
       icon: <MapPinIcon className="h-4 w-4 text-muted-foreground" />
     },
     {
-      title: "Provinsi",
-      value: totalProvinces,
-      description: "Di Pulau Jawa",
-      icon: <MapPinIcon className="h-4 w-4 text-muted-foreground" />
+      title: "Rokok Tertinggi",
+      value: maxRokok.value.toLocaleString(),
+      description: maxRokok.region,
+      icon: <ActivityIcon className="h-4 w-4 text-muted-foreground" />
     },
     {
       title: "Total Kasus",
@@ -80,22 +102,16 @@ export default function OverviewCards() {
       icon: <UsersIcon className="h-4 w-4 text-muted-foreground" />
     },
     {
-      title: "Risiko Tinggi",
-      value: highRiskRegions,
-      description: "Wilayah Berisiko",
-      icon: <AlertTriangleIcon className="h-4 w-4 text-muted-foreground" />
+      title: "Wilayah Penelitian",
+      value: totalRegions,
+      description: "Kabupaten/Kota",
+      icon: <MapPinIcon className="h-4 w-4 text-muted-foreground" />
     },
     {
-      title: "Variabel Model",
-      value: significantVariables,
-      description: "Variabel Signifikan",
-      icon: <BarChartIcon className="h-4 w-4 text-muted-foreground" />
-    },
-    {
-      title: "Sanitasi",
-      value: `${avgSanitasi}%`,
-      description: "Rata-rata Cakupan",
-      icon: <ActivityIcon className="h-4 w-4 text-muted-foreground" />
+      title: "Provinsi",
+      value: totalProvinces,
+      description: "Di Pulau Jawa",
+      icon: <MapPinIcon className="h-4 w-4 text-muted-foreground" />
     }
   ];
 
