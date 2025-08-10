@@ -147,7 +147,7 @@ export default function About() {
             <div className="about-team-grid">
               <div className="about-team-card">
                 <div className="about-team-avatar">
-                  <Image src="/Rap7.jpg" alt="Rafi Rizha Syakhari" width={96} height={96} className="object-cover" />
+                  <Image src="/Rap7.webp" alt="Rafi Rizha Syakhari" width={96} height={96} className="object-cover" />
                 </div>
                 <h3 className="about-team-name">Rafi Rizha Syakhari</h3>
                 <p className="about-team-role">Peneliti Utama — Mahasiswa Program Studi Diploma IV Komputasi Statistik</p>
@@ -161,7 +161,7 @@ export default function About() {
                 <h3 className="about-team-name">Dr. Drs. Waris Marsisno, M.Stat.</h3>
                 <p className="about-team-role">Dosen Pembimbing</p>
                 <p className="about-team-institution">Politeknik Statistika STIS</p>
-                <p className="about-team-description">Keahlian dalam analisis spasial dan epidemiologi.</p>
+                <p className="about-team-description">Minat penelitian meliputi analisis spasial, analisis manajemen kinerja, analisis kesiapan kerja mahasiswa, dan pengolahan data remote sensing (satelit).</p>
               </div>
             </div>
           </div>
