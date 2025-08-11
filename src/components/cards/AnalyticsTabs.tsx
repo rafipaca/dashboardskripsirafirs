@@ -239,24 +239,54 @@ export default function AnalyticsTabs({ selectedRegion }: AnalyticsTabsProps) {
                           {selectedRegion ? (
                             regionData ? (
                               <div className="space-y-2 text-sm">
-                                <div className="grid grid-cols-2 gap-2">
-                                  <div className="p-3 bg-white rounded-lg border shadow-sm">
-                                    <div className="text-xs font-medium text-muted-foreground">Kasus</div>
-                                    <div className="text-base font-semibold text-primary">{formatNum(regionData.Penemuan)}</div>
-                                  </div>
-                                  <div className="p-3 bg-white rounded-lg border shadow-sm">
-                                    <div className="text-xs font-medium text-muted-foreground">Gizi Kurang</div>
-                                    <div className="text-base font-semibold text-primary">{formatInt(regionData.GiziKurang)}</div>
-                                  </div>
-                                  <div className="p-3 bg-white rounded-lg border shadow-sm">
-                                    <div className="text-xs font-medium text-muted-foreground">IMD</div>
-                                    <div className="text-base font-semibold text-primary">{formatPct(regionData.IMD, 2)}</div>
-                                  </div>
-                                  <div className="p-3 bg-white rounded-lg border shadow-sm">
-                                    <div className="text-xs font-medium text-muted-foreground">Rokok/Kapita</div>
-                                    <div className="text-base font-semibold text-primary">{formatDec(regionData.RokokPerkapita, 3)}</div>
-                                  </div>
+                                {/* Kasus pneumonia selalu ditampilkan */}
+                                <div className="p-3 bg-white rounded-lg border shadow-sm mb-3">
+                                  <div className="text-xs font-medium text-muted-foreground">Kasus Pneumonia</div>
+                                  <div className="text-lg font-bold text-primary">{formatNum(regionData.Penemuan)}</div>
                                 </div>
+                                
+                                {/* Variabel signifikan berdasarkan model */}
+                                {selectedRegionData?.equation ? (
+                                  (() => {
+                                    const significantVars = Object.entries(selectedRegionData.equation.coefficients)
+                                      .filter(([key, coeff]) => key !== 'intercept' && coeff.significant);
+                                    
+                                    const varMapping = {
+                                      'giziKurang': { label: 'Gizi Kurang', value: formatInt(regionData.GiziKurang), unit: '' },
+                                      'imd': { label: 'IMD', value: formatPct(regionData.IMD, 2), unit: '' },
+                                      'rokokPerkapita': { label: 'Rokok/Kapita', value: formatDec(regionData.RokokPerkapita, 3), unit: '' },
+                                      'kepadatan': { label: 'Kepadatan', value: formatNum(regionData.Kepadatan), unit: ' jiwa/km²' },
+                                      'airMinum': { label: 'Air Minum', value: formatPct(regionData.AirMinumLayak, 2), unit: '' },
+                                      'sanitasi': { label: 'Sanitasi', value: formatPct(regionData.Sanitasi, 2), unit: '' }
+                                    };
+                                    
+                                    return significantVars.length > 0 ? (
+                                      <div className="grid grid-cols-2 gap-2">
+                                        {significantVars.map(([varName]) => {
+                                          const varInfo = varMapping[varName as keyof typeof varMapping];
+                                          if (!varInfo) return null;
+                                          
+                                          return (
+                                            <div key={varName} className="p-3 bg-white rounded-lg border shadow-sm">
+                                              <div className="text-xs font-medium text-muted-foreground">{varInfo.label}</div>
+                                              <div className="text-base font-semibold text-primary">
+                                                {varInfo.value}{varInfo.unit}
+                                              </div>
+                                            </div>
+                                          );
+                                        })}
+                                      </div>
+                                    ) : (
+                                      <div className="text-sm text-muted-foreground italic">
+                                        Tidak ada variabel yang signifikan untuk wilayah ini.
+                                      </div>
+                                    );
+                                  })()
+                                ) : (
+                                  <div className="text-sm text-muted-foreground italic">
+                                    Memuat data model...
+                                  </div>
+                                )}
                               </div>
                             ) : (
                               <div className="text-sm text-muted-foreground">Data wilayah tidak ditemukan.</div>
