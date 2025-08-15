@@ -2,6 +2,7 @@ import { useCallback, useMemo } from 'react';
 import { Feature } from 'geojson';
 import { useResearchData } from './useResearchData';
 import type { ResearchDataPoint, GWNBRCoefficient } from '@/lib/data/research-data';
+import { DataProcessor } from '@/lib/utils/dataProcessing';
 
 const gray = '#B0B0B0';
 
@@ -145,8 +146,7 @@ export const useMapData = () => {
       if (!regionData) return `${regionName}<br>Data tidak ditemukan.`;
 
   const regionNameFromFeature = regionData.NAMOBJ || 'N/A';
-  const formatValue = (value: unknown) => (value !== undefined && value !== null && typeof value === 'number') ? value.toLocaleString() : 'N/A';
-  const formatInt = (value: unknown) => (value !== undefined && value !== null && typeof value === 'number') ? Math.round(value).toLocaleString() : 'N/A';
+
 
       // Map X-codes to descriptive labels for display
       const variableNameMap: Record<string, string> = {
@@ -171,13 +171,13 @@ export const useMapData = () => {
         <div style="font-family: Arial, sans-serif; font-size: 14px; min-width: 250px;">
           <strong style="font-size: 16px; color: #333;">${regionNameFromFeature}</strong>
           <hr style="margin: 4px 0;"/>
-          <p><strong>Kasus Pneumonia:</strong> ${formatValue(regionData.Penemuan)}</p>
-          <p><strong>Gizi Kurang:</strong> ${formatInt(regionData.GiziKurang)}</p>
-          <p><strong>IMD:</strong> ${formatValue(regionData.IMD)}%</p>
-          <p><strong>Perokok/Kapita:</strong> ${formatValue(regionData.RokokPerkapita)}</p>
-          <p><strong>Kepadatan Penduduk:</strong> ${formatValue(regionData.Kepadatan)} jiwa/km²</p>
-          <p><strong>Sanitasi Layak:</strong> ${formatValue(regionData.Sanitasi)}%</p>
-          <p><strong>Air Minum Layak:</strong> ${formatValue(regionData.AirMinumLayak)}%</p>
+          <p><strong>Kasus Pneumonia:</strong> ${DataProcessor.formatNumber(regionData.Penemuan)}</p>
+          <p><strong>Gizi Kurang:</strong> ${DataProcessor.formatNumber(regionData.GiziKurang)}</p>
+          <p><strong>IMD:</strong> ${DataProcessor.formatNumber(regionData.IMD)}%</p>
+          <p><strong>Perokok/Kapita:</strong> ${DataProcessor.formatNumber(regionData.RokokPerkapita)}</p>
+          <p><strong>Kepadatan Penduduk:</strong> ${DataProcessor.formatNumber(regionData.Kepadatan)} jiwa/km²</p>
+          <p><strong>Sanitasi Layak:</strong> ${DataProcessor.formatNumber(regionData.Sanitasi)}%</p>
+          <p><strong>Air Minum Layak:</strong> ${DataProcessor.formatNumber(regionData.AirMinumLayak)}%</p>
           <hr style="margin: 4px 0;"/>
           <strong style="color: #b91c1c;">Variabel Signifikan:</strong>
           <p>${formattedVars || 'Tidak ada'}</p>
@@ -198,9 +198,12 @@ export const useMapData = () => {
 
       if (!regionCoeffs) return `Model untuk ${regionName} tidak ditemukan.`;
 
-  const formatCoeff = (val: number) => (val >= 0 ? `+ ${val.toFixed(7)}` : `- ${Math.abs(val).toFixed(7)}`);
+    const formatCoeff = (val: number) => {
+    const formattedVal = val.toFixed(7).replace('.', ',');
+    return val >= 0 ? `+ ${formattedVal}` : `- ${Math.abs(val).toFixed(7).replace('.', ',')}`;
+  };
 
-  let equation = `Y = ${regionCoeffs.Intercept.toFixed(7)} `;
+    let equation = `Y = ${regionCoeffs.Intercept.toFixed(7).replace('.', ',')} `;
       if (Math.abs(regionCoeffs.GiziKurangZ) > 1.96) equation += `${formatCoeff(regionCoeffs.GiziKurangKoef)}*X1 `;
       if (Math.abs(regionCoeffs.IMDZ) > 1.96) equation += `${formatCoeff(regionCoeffs.IMDKoef)}*X2 `;
       if (Math.abs(regionCoeffs.RokokPerkapitaZ) > 1.96) equation += `${formatCoeff(regionCoeffs.RokokPerkapitaKoef)}*X3 `;

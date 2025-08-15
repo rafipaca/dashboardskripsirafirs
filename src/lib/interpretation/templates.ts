@@ -3,6 +3,13 @@
  * Menyediakan template interpretasi yang mudah dipahami tanpa istilah teknis
  */
 
+const formatNumber = (value: number, digits: number = 4) => {
+  return new Intl.NumberFormat('de-DE', {
+    minimumFractionDigits: digits,
+    maximumFractionDigits: digits,
+  }).format(value);
+};
+
 export interface FactorInterpretation {
   variable: string;
   coefficient: number;
@@ -37,7 +44,7 @@ export function getSignificantFactorTemplate(factor: FactorInterpretation, regio
   const lebihTinggiRendah = factor.effect === 'increase' ? 'lebih tinggi' : 'lebih rendah';
   
   // Hitung persentase perubahan dari koefisien (exp(β) - 1) * 100
-  const percentageChange = ((Math.exp(factor.coefficient) - 1) * 100).toFixed(4);
+    const percentageChange = formatNumber((Math.exp(factor.coefficient) - 1) * 100, 4);
   
   let variableDescription = '';
   let implikasiPrioritas = '';
@@ -69,7 +76,7 @@ export function getSignificantFactorTemplate(factor: FactorInterpretation, regio
 
 • **Arah Pengaruh:** ${arahPengaruh}
 
-• **Interpretasi:** Di ${regionName}, variabel ini menunjukkan asosiasi yang signifikan secara statistik dengan jumlah kasus pneumonia. Berdasarkan koefisien model lokal (β = ${factor.coefficient.toFixed(4)}), dapat diinterpretasikan bahwa, dengan asumsi faktor-faktor lain konstan (ceteris paribus), wilayah dengan ${variableDescription} yang ${lebihTinggiRendah} diperkirakan memiliki rata-rata jumlah kasus pneumonia sekitar ${percentageChange}% ${lebihTinggiRendah}.
+• **Interpretasi:** Di ${regionName}, variabel ini menunjukkan asosiasi yang signifikan secara statistik dengan jumlah kasus pneumonia. Berdasarkan koefisien model lokal (β = ${formatNumber(factor.coefficient, 4)}), dapat diinterpretasikan bahwa, dengan asumsi faktor-faktor lain konstan (ceteris paribus), wilayah dengan ${variableDescription} yang ${lebihTinggiRendah} diperkirakan memiliki rata-rata jumlah kasus pneumonia sekitar ${percentageChange}% ${lebihTinggiRendah}.
 
 • **Implikasi Prioritas:** Temuan ini mengindikasikan bahwa ${implikasiPrioritas} merupakan area intervensi prioritas untuk dipertimbangkan di wilayah ini.`;
 }
@@ -143,9 +150,9 @@ export function generateSummary(interpretation: SimpleInterpretation): string {
   let text = `Ringkasan Diagnosis Spasial — Di ${regionName}, terdapat ${significantFactors.length} faktor yang berpengaruh signifikan terhadap kasus pneumonia balita. `;
 
   if (dominantFactor) {
-    const pct = ((Math.exp(dominantFactor.coefficient) - 1) * 100).toFixed(4);
+        const pct = formatNumber((Math.exp(dominantFactor.coefficient) - 1) * 100, 4);
     text += `Faktor dominan adalah ${getVarName(dominantFactor.variable)} yang ` +
-            `${dominantFactor.effect === 'increase' ? 'meningkatkan' : 'menurunkan'} risiko (β = ${dominantFactor.coefficient.toFixed(4)}, ≈ ${pct}%). `;
+            `${dominantFactor.effect === 'increase' ? 'meningkatkan' : 'menurunkan'} risiko (β = ${formatNumber(dominantFactor.coefficient, 4)}, ≈ ${pct}%). `;
   }
 
   if (risk.length > 0) {
@@ -168,39 +175,39 @@ export function generateRecommendations(interpretation: SimpleInterpretation): s
 
   significantFactors.forEach(factor => {
     if (factor.variable === 'giziKurang' && factor.effect === 'increase') {
-      recommendations.push('Perkuat program perbaikan gizi balita melalui posyandu dan puskesmas');
-      recommendations.push('Tingkatkan edukasi gizi kepada ibu dan keluarga');
+            recommendations.push('Perkuat program perbaikan gizi balita melalui posyandu dan puskesmas (Alam & Bahar, 2021)');
+      recommendations.push('Tingkatkan edukasi gizi kepada ibu dan keluarga (Alam & Bahar, 2021)');
     }
 
     if (factor.variable === 'imd' && factor.effect === 'decrease') {
-      recommendations.push('Tingkatkan sosialisasi dan praktik Inisiasi Menyusu Dini (IMD)');
-      recommendations.push('Latih tenaga kesehatan untuk mendukung praktik IMD');
+            recommendations.push('Tingkatkan sosialisasi dan praktik Inisiasi Menyusu Dini (IMD) sebagai "imunisasi pertama" bagi bayi (Karmany et al., 2020)');
+      recommendations.push('Latih tenaga kesehatan untuk mendukung praktik IMD (Karmany et al., 2020)');
     }
 
     if (factor.variable === 'rokokPerkapita' && factor.effect === 'increase') {
-      recommendations.push('Intensifkan kampanye anti-rokok dan bahayanya bagi kesehatan anak');
-      recommendations.push('Terapkan kebijakan kawasan tanpa rokok yang lebih ketat');
+            recommendations.push('Intensifkan kampanye anti-rokok untuk melindungi balita dari paparan asap rokok pasif (Bayer et al., 2020)');
+      recommendations.push('Terapkan kebijakan kawasan tanpa rokok yang lebih ketat sebagai intervensi berbasis bukti (Bayer et al., 2020)');
     }
 
     if (factor.variable === 'kepadatan' && factor.effect === 'increase') {
-      recommendations.push('Tingkatkan ventilasi dan sirkulasi udara di pemukiman padat');
-      recommendations.push('Perkuat program deteksi dini dan isolasi kasus pneumonia');
+            recommendations.push('Tingkatkan ventilasi dan sirkulasi udara di pemukiman padat untuk mitigasi dampak lingkungan komunal');
+      recommendations.push('Perkuat program deteksi dini dan tata laksana kasus pneumonia untuk memutus rantai penularan (Salam et al., 2019)');
     }
 
     if (factor.variable === 'airMinum' && factor.effect === 'decrease') {
-      recommendations.push('Perbaiki akses dan kualitas air minum layak');
-      recommendations.push('Edukasi masyarakat tentang pentingnya air bersih untuk kesehatan');
+            recommendations.push('Perbaiki akses dan kualitas air minum layak sebagai faktor protektif (Rehman et al., 2021)');
+      recommendations.push('Edukasi masyarakat tentang pentingnya air bersih untuk kesehatan (Rehman et al., 2021)');
     }
 
     if (factor.variable === 'sanitasi' && factor.effect === 'decrease') {
-      recommendations.push('Tingkatkan akses sanitasi layak di wilayah ini');
-      recommendations.push('Edukasi masyarakat tentang praktik higienis dan sanitasi');
+            recommendations.push('Tingkatkan akses sanitasi layak sebagai faktor protektif (Rehman et al., 2021)');
+      recommendations.push('Edukasi masyarakat tentang praktik higienis dan sanitasi (Rehman et al., 2021)');
     }
   });
 
   // Rekomendasi umum
-  recommendations.push('Perkuat sistem surveilans pneumonia untuk deteksi dini');
-  recommendations.push('Tingkatkan kualitas pelayanan kesehatan anak di fasilitas kesehatan');
+    recommendations.push('Perkuat sistem surveilans pneumonia untuk deteksi dini (Salam et al., 2019)');
+    recommendations.push('Tingkatkan kualitas pelayanan kesehatan anak sesuai kerangka kerja strategis global seperti GAPPD (Salam et al., 2019)');
 
   return [...new Set(recommendations)]; // Remove duplicates
 }

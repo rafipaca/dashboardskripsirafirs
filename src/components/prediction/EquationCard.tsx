@@ -21,6 +21,13 @@ import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { MathTex } from '@/components/ui/MathTex';
 
+const formatValue = (value: number, digits: number = 7) => {
+  return new Intl.NumberFormat('de-DE', {
+    minimumFractionDigits: digits,
+    maximumFractionDigits: digits,
+  }).format(value);
+};
+
 interface EquationCardProps {
   equation: EquationDisplay;
   className?: string;
@@ -54,6 +61,7 @@ export function EquationCard({ equation, className }: EquationCardProps) {
     ];
 
     let processedEquation = equationString
+      .replace(/\./g, ',') // Ganti titik desimal menjadi koma
       // Normalize ln(mu) variants to KaTeX form
       .replace(/ln\s*\((μ|µ|mu)\)/gi, '\\ln(\\mu)')
       .replace(/×/g, '\\cdot ');
@@ -82,7 +90,7 @@ export function EquationCard({ equation, className }: EquationCardProps) {
   // Export equation as text
   const exportEquation = () => {
     const content = `Persamaan GWNBR - ${regionName}\n\n${equationString}\n\nKoefisien:\n${Object.entries(coefficients).map(([key, coef]) => 
-      `${key}: ${coef.value.toFixed(7)} (Z: ${coef.zValue.toFixed(3)}, Signifikan: ${coef.significant ? 'Ya' : 'Tidak'})`
+      `${key}: ${formatValue(coef.value, 7)} (Z: ${coef.zValue.toFixed(3)}, Signifikan: ${coef.significant ? 'Ya' : 'Tidak'})`
     ).join('\n')}\n\nTheta (θ): ${theta.toFixed(4)}`;
     
     const blob = new Blob([content], { type: 'text/plain' });
@@ -187,7 +195,7 @@ export function EquationCard({ equation, className }: EquationCardProps) {
                   'font-mono text-lg',
                   coef.significant ? 'text-green-700' : 'text-gray-500'
                 )}>
-                  {coef.value.toFixed(7)}
+                  {formatValue(coef.value, 7)}
                 </div>
                 <div className="text-xs text-gray-500">
                   {coef.value > 0 ? 'Meningkatkan' : 'Menurunkan'}

@@ -10,6 +10,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useResearchData } from "@/hooks/useResearchData";
 import { countJavaProvincesFromRawData } from "@/lib/utils/regionUtils";
+import { DataProcessor } from "@/lib/utils/dataProcessing";
 
 interface ResearchSummaryCardProps {
   title: string;
@@ -49,7 +50,7 @@ const ResearchSummaryCard = ({
       </CardHeader>
       <CardContent>
         <div className="text-2xl font-bold text-foreground">
-          {typeof value === 'number' ? value.toLocaleString() : value}
+          {typeof value === 'number' ? DataProcessor.formatNumber(value) : value}
         </div>
         <p className="text-xs text-muted-foreground mt-2">
           {description}
@@ -105,28 +106,28 @@ export default function ResearchSummaryCards() {
   const summaryData: SummaryItem[] = [
     {
       title: "Balita Gizi Kurang",
-      value: maxGiziKurang.value.toLocaleString(),
+      value: maxGiziKurang.value,
       description: maxGiziKurang.region,
       icon: <UsersIcon className="h-4 w-4" />,
       variant: "default" as "default" | "success" | "warning" | "error"
     },
     {
       title: "Kepadatan Tertinggi",
-      value: maxKepadatan.value.toLocaleString(),
+      value: maxKepadatan.value,
       description: maxKepadatan.region,
       icon: <MapPinIcon className="h-4 w-4" />,
       variant: "default" as "default" | "success" | "warning" | "error"
     },
     {
       title: "Rokok Tertinggi",
-      value: maxRokok.value.toLocaleString(),
+      value: maxRokok.value,
       description: maxRokok.region,
       icon: <ActivityIcon className="h-4 w-4" />,
       variant: "default" as "default" | "success" | "warning" | "error"
     },
     {
       title: "Total Kasus",
-      value: totalCases.toLocaleString(),
+      value: totalCases,
       description: "Kasus Penemuan",
       icon: <UsersIcon className="h-4 w-4" />,
       variant: "default" as "default" | "success" | "warning" | "error"

@@ -68,7 +68,7 @@ export default function AnalyticsTabs({ selectedRegion }: AnalyticsTabsProps) {
   const totalVariablesUsed = selectedRegionData?.equation
     ? Object.keys(selectedRegionData.equation.coefficients).filter(k => k !== 'intercept').length
     : 6;
-  const nfID = (opts?: Intl.NumberFormatOptions) => new Intl.NumberFormat('id-ID', opts);
+    const nfID = (opts?: Intl.NumberFormatOptions) => new Intl.NumberFormat('de-DE', opts);
   const formatNum = (val?: number | null) => (typeof val === 'number' ? nfID().format(val) : 'N/A');
   const formatPct = (val?: number | null, digits: number = 4) =>
     (typeof val === 'number' ? `${nfID({ minimumFractionDigits: digits, maximumFractionDigits: digits }).format(val)}%` : 'N/A');
@@ -198,7 +198,8 @@ export default function AnalyticsTabs({ selectedRegion }: AnalyticsTabsProps) {
                                       ];
                                       let tex = selectedRegionData.equation.equation
                                         .replace(/ln\s*\((μ|µ|mu)\)/gi, '\\ln(\\mu)')
-                                        .replace(/×/g, '\\cdot ');
+                                        .replace(/×/g, '\\cdot ')
+                                        .replace(/\./g, ',');
                                       mapping.forEach(m => {
                                         tex = tex.replace(new RegExp(m.pattern, 'g'), `X_{${m.idx}}`);
                                       });

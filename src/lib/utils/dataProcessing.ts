@@ -57,15 +57,23 @@ export class DataProcessor {
     ];
   }
 
-  static formatNumber(num: number): string {
-    return new Intl.NumberFormat('id-ID').format(num);
+  static formatNumber(num: number | null | undefined): string {
+    if (num === null || num === undefined) {
+      return "0";
+    }
+    // Menggunakan lokal 'de-DE' untuk memastikan format ribuan dengan titik dan desimal dengan koma
+    return new Intl.NumberFormat('de-DE').format(num);
   }
 
-  static formatPercentage(num: number): string {
-    return new Intl.NumberFormat('id-ID', {
+  static formatPercentage(num: number | null | undefined): string {
+    if (num === null || num === undefined) {
+      return "0,0%";
+    }
+    // Menggunakan lokal 'de-DE' untuk konsistensi format
+    return new Intl.NumberFormat('de-DE', {
       style: 'percent',
       minimumFractionDigits: 1,
-      maximumFractionDigits: 4,
+      maximumFractionDigits: 2, // Membatasi maksimal 2 angka desimal untuk persentase
     }).format(num / 100);
   }
 }
