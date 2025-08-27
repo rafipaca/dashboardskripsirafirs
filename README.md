@@ -1,93 +1,95 @@
-# Dashboard GWNBR Pneumonia
+# Analisis Spasial Faktor Risiko Kejadian Pneumonia Balita di Pulau Jawa 2023
 
-Dashboard interaktif untuk visualisasi model Geographically Weighted Negative Binomial Regression (GWNBR) pada kasus pneumonia balita di Pulau Jawa.
+**Dashboard Interaktif untuk Visualisasi Model GWNBR**
 
-## Deskripsi Proyek
+---
 
-Proyek ini merupakan bagian dari skripsi yang mengimplementasikan model GWNBR untuk analisis spasial kasus pneumonia balita. Dashboard ini menyediakan:
+-   **Nama**: Rafi Rizha Syakhari
+-   **NIM**: 222112299
+-   **Judul Skripsi**: Analisis Spasial Faktor Risiko Kejadian Pneumonia Balita di Pulau Jawa 2023
+-   **Dosen Pembimbing**: Dr. Drs. Waris Marsisno, M.Stat
 
-- Visualisasi peta interaktif dengan Leaflet
-- Grafik dan chart dengan Recharts
-- Analisis statistik spasial
-- Tabel data interaktif
-- Filter dan kontrol interaktif
+---
 
-## Teknologi yang Digunakan
+## Deskripsi Singkat Skripsi
 
-- **Next.js 15.3.4** - Framework React untuk SSR dan SSG
-- **TypeScript** - Type safety untuk JavaScript
-- **TailwindCSS 4** - Utility-first CSS framework
-- **Radix UI** - Komponen UI yang dapat diakses
-- **Leaflet** - Library untuk peta interaktif
-- **Recharts** - Library untuk grafik dan chart
-- **React 19** - Library UI modern
+Proyek ini merupakan implementasi dari skripsi yang bertujuan untuk menganalisis faktor-faktor risiko yang memengaruhi kejadian pneumonia pada balita di Pulau Jawa pada tahun 2023. Dengan menggunakan metode **Geographically Weighted Negative Binomial Regression (GWNBR)**, penelitian ini memodelkan hubungan antara variabel prediktor dengan kasus pneumonia secara spasial, yang memungkinkan adanya variasi koefisien regresi di setiap lokasi.
+
+Dashboard ini berfungsi sebagai alat visualisasi interaktif untuk hasil pemodelan tersebut. Dibangun dengan teknologi modern seperti **Next.js**, **React**, dan **Leaflet**, dashboard ini menyajikan:
+-   Peta tematik yang menampilkan distribusi spasial kasus pneumonia dan signifikansi variabel.
+-   Grafik dan bagan dinamis untuk analisis data yang lebih mendalam.
+-   Tabel data yang informatif dan mudah diakses.
+-   Fitur filter untuk mempermudah eksplorasi data berdasarkan wilayah atau variabel tertentu.
+
+Tujuan utama dari dashboard ini adalah untuk mempermudah pemahaman hasil analisis spasial yang kompleks bagi para pemangku kepentingan, seperti akademisi, praktisi kesehatan, dan pemerintah daerah.
 
 ## Struktur Proyek
 
+Berikut adalah struktur direktori utama dari proyek ini:
+
 ```
 src/
-├── app/                    # App Router (Next.js 13+)
-│   ├── globals.css        # Global styles
-│   ├── layout.tsx         # Root layout
-│   └── page.tsx           # Home page
-├── components/            # React components
-│   ├── ui/               # Reusable UI components
-│   ├── dashboard/        # Dashboard-specific components
-│   └── *.tsx             # Other components
-├── lib/                  # Utilities and helpers
-├── utils/                # Shared utilities
-└── types/               # TypeScript type definitions
+├── app/                # Konfigurasi routing utama (App Router)
+│   ├── dashboard/      # Halaman utama dashboard
+│   └── webstory/       # Halaman untuk web story
+├── components/         # Komponen React yang dapat digunakan kembali
+│   ├── analytics/      # Komponen untuk analitik
+│   ├── cards/          # Komponen kartu untuk menampilkan data
+│   ├── charts/         # Komponen grafik (Recharts)
+│   └── map/            # Komponen peta (Leaflet)
+├── hooks/              # Custom hooks untuk logika state
+│   ├── useGeojsonData.ts # Hook untuk mengambil data GeoJSON
+│   └── useMapData.ts   # Hook untuk mengelola data peta
+├── lib/                # Fungsi-fungsi utilitas dan konstanta
+│   ├── api/            # Fungsi untuk fetch data
+│   ├── constants/      # Konstanta yang digunakan di aplikasi
+│   └── data/           # Pengolahan data mentah
+└── public/             # Aset statis
+    ├── data/           # File data (CSV, GeoJSON)
+    └── images/         # Gambar dan ikon
 ```
+
+## Teknologi yang Digunakan
+
+-   **Next.js 15.3.4** - Framework React untuk Server-Side Rendering (SSR) dan Static Site Generation (SSG).
+-   **TypeScript** - Menambahkan type-safety pada JavaScript untuk pengembangan yang lebih robust.
+-   **TailwindCSS 4** - Framework CSS utility-first untuk desain antarmuka yang cepat dan modern.
+-   **Radix UI** - Pustaka komponen UI headless untuk aksesibilitas yang lebih baik.
+-   **Leaflet** - Pustaka JavaScript untuk peta interaktif.
+-   **Recharts** - Pustaka grafik untuk visualisasi data.
+-   **React 19** - Pustaka JavaScript untuk membangun antarmuka pengguna.
 
 ## Instalasi dan Penggunaan
 
 ### Prasyarat
-- Node.js versi 18 atau lebih baru
-- npm atau package manager lainnya
+-   Node.js versi 18 atau lebih baru
+-   npm, yarn, atau pnpm
 
 ### Instalasi
-1. Clone repository
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
+1.  Clone repository ini:
+    ```bash
+    git clone <URL_REPOSITORY>
+    ```
+2.  Masuk ke direktori proyek dan install dependencies:
+    ```bash
+    cd dashboardskripsirafirs
+    npm install
+    ```
 
-### Development
-Menjalankan server development:
+### Menjalankan Server Development
+Untuk menjalankan aplikasi di mode development:
 ```bash
 npm run dev
 ```
-Buka [http://localhost:3000](http://localhost:3000) di browser.
+Buka [http://localhost:3000](http://localhost:3000) di browser Anda.
 
-### Build untuk Production
+### Build untuk Produksi
+Untuk membuat build produksi:
 ```bash
 npm run build
 npm start
 ```
 
-### Lint dan Format
-```bash
-npm run lint
-```
+---
 
-## Fitur Utama
-
-- **Peta Interaktif**: Visualisasi spasial data pneumonia
-- **Dashboard Analytics**: Ringkasan statistik dan visualisasi
-- **Responsive Design**: Kompatibel dengan berbagai ukuran layar
-- **Dark Mode**: Toggle antara light dan dark theme
-- **Filter Interaktif**: Filter data berdasarkan wilayah dan periode
-
-## Data
-
-- Data kasus pneumonia balita di Pulau Jawa
-- Data spasial dalam format GeoJSON
-- Statistik demografi dan faktor risiko
-
-## Lisensi
-
-Proyek ini dibuat untuk keperluan akademik (skripsi).
-
-## Kontak
-
-Untuk pertanyaan atau kontribusi, silakan buat issue di repository.
+Proyek ini dibuat untuk memenuhi persyaratan akademik dalam menyelesaikan skripsi.

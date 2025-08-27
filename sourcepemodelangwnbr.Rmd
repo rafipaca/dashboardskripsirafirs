@@ -1,0 +1,994 @@
+---
+title: "fixskripsi"
+author: "Rafi Rizha Syakhari - 222112299 - 4SI2"
+date: "2025-06-18"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Library
+
+```{r, error=FALSE, warning=FALSE}
+library(readxl)
+library(MASS)
+library(spgwr)
+library(spdep)
+library(sf)
+library(dplyr)
+library(tmap)
+library(ggplot2)
+library(GWmodel)
+library(car)
+library(lmtest)
+```
+# SHP Export
+```{r}
+library(tmap)
+library(dplyr)
+
+# Baca Excel 
+#file_path2 <- "D:/STIS/SKRIPSI/Pengolahan/sourcedataskripsi.xlsx"
+#datapnjawaqgis <- read_excel(file_path, sheet = "MergeQGIS")
+
+# Untuk Kebutuhan Parsial Sginifikansi
+file_path2 <- "D:/STIS/SKRIPSI/Pengolahan/Hasil_Pengolahan.xlsx"
+datapnjawaqgis <- read_excel(file_path, sheet = "Sheet1")
+
+# Baca shapefile batas administrasi Pulau Jawa
+jawa <- st_read("D:/STIS/SKRIPSI/Pengolahan/RBI_Pulau_Jawa/RBI_PulauJawa.shp")
+
+# Gabungkan data kasus ke data spasial (shapefile Pulau Jawa)
+jawa_kasus <- jawa %>%
+  left_join(datapnjawaqgis, by = c("NAMOBJ" = "NAMOBJ"))  # sesuaikan nama kolom join
+
+
+st_write(jawa_kasus, "D:/STIS/SKRIPSI/OUTPUT/jawa_pneumonia_last.shp",
+         layer_options = "ENCODING=UTF-8")
+View(jawa_kasus)
+```
+
+
+# Data Import
+
+```{r}
+# Baca Excel 
+file_path <- "D:/STIS/SKRIPSI/Pengolahan/sourcedataskripsi.xlsx"
+datapnjawa <- read_excel(file_path, sheet = "Summary")
+```
+# Dependensi Spasial
+```{r}
+library(ape)
+test2.dist=as.matrix(dist(cbind(datapnjawa$LongitudeOSM, datapnjawa$LatitudeOSM)))
+test2.dist.inv=1/test2.dist
+test2.dist.inv[is.infinite(test2.dist.inv)]=0
+diag(test2.dist.inv)=0
+Moran.I(datapnjawa$Penemuan,test2.dist.inv)
+```
+
+# Pemodelan
+## Variabel Decision
+### Versi Without R2
+```{r}
+# Load library yang diperlukan
+library(MASS)      # Untuk glm.nb
+library(car)       # Untuk vif
+library(lmtest)    # Untuk bptest
+
+# Fungsi untuk mengevaluasi model berdasarkan VIF dan BP test
+evaluate_model <- function(formula, data) {
+  model <- try(glm.nb(formula, data = data), silent = TRUE)
+  
+  if(inherits(model, "try-error")) {
+    return(list(
+      formula = formula,
+      model = NULL,
+      max_vif = Inf,
+      bp_pvalue = 1,
+      aic = Inf
+    ))
+  }
+  
+  # Hitung VIF
+  vif_values <- try(vif(model), silent = TRUE)
+  if(inherits(vif_values, "try-error")) {
+    max_vif <- Inf
+  } else {
+    max_vif <- max(vif_values)
+  }
+  
+  # Hitung BP test p-value
+  bp_test <- try(bptest(model), silent = TRUE)
+  if(inherits(bp_test, "try-error")) {
+    bp_pvalue <- 1  # Default ke 1 jika error
+  } else {
+    bp_pvalue <- bp_test$p.value
+  }
+  
+  # Hitung AIC
+  aic <- AIC(model)
+  
+  return(list(
+    formula = formula,
+    model = model,
+    max_vif = max_vif,
+    bp_pvalue = bp_pvalue,
+    aic = aic
+  ))
+}
+
+# Daftar semua variabel prediktor potensial, kecuali Imunisasi
+all_vars <- c("PM10", "BBLR_P","RLSPr",
+              "Kemiskinan","Kepadatan","CurahHujanSum","Sanitasi", "AirMinum", 
+              "IMD", "K6","RasioPuskesmas","RokokPerkapita")
+
+# Daftar semua variabel prediktor potensial, kecuali Imunisasi
+#all_vars <- c( "PM10","Kemiskinan","Kepadatan","Sanitasi", "AirMinum", "GiziKurang", "IMD", "K6","RasioPuskesmas","BBLR")
+
+# Inisialisasi
+vif_threshold <- 7 # Batas VIF yang dapat diterima
+bp_threshold <- 0.05 # Batas p-value BP test yang diinginkan
+candidate_models <- list()
+
+# Coba kombinasi dengan minimal 8 variabel
+min_vars <- 6
+max_vars <- min(10, length(all_vars))  # Batasi hingga 10 variabel untuk menghindari overfitting
+
+# Fungsi untuk menghasilkan semua kombinasi
+generate_combinations <- function(vars, size) {
+  combn(vars, size, simplify = FALSE)
+}
+
+# Evaluasi model untuk berbagai kombinasi variabel
+for (size in min_vars:max_vars) {
+  cat("Mengevaluasi kombinasi dengan", size, "variabel...\n")
+  combinations <- generate_combinations(all_vars, size)
+  
+  # Tampilkan progress
+  total_combinations <- length(combinations)
+  cat("Total", total_combinations, "kombinasi untuk dievaluasi\n")
+  
+  # Untuk menghemat waktu, kita bisa menggunakan sampling jika kombinasinya terlalu banyak
+  if (total_combinations > 1000) {
+    set.seed(123) # Untuk reproduksibilitas
+    sample_size <- min(1000, total_combinations)
+    combinations <- sample(combinations, sample_size)
+    cat("Terlalu banyak kombinasi, mengambil sampel", sample_size, "kombinasi secara acak\n")
+    total_combinations <- sample_size
+  }
+  
+  for (i in 1:total_combinations) {
+    if (i %% 50 == 0) cat("Progress:", i, "/", total_combinations, "\n")
+    
+    vars <- combinations[[i]]
+    formula_str <- paste("Penemuan ~", paste(vars, collapse = " + "))
+    formula_obj <- as.formula(formula_str)
+    
+    # Evaluasi model
+    eval_result <- evaluate_model(formula_obj, datapnjawa)
+    
+    # Simpan hasil jika VIF di bawah threshold
+    if (!is.null(eval_result$model) && eval_result$max_vif < vif_threshold) {
+      candidate_models[[formula_str]] <- eval_result
+    }
+  }
+  
+  # Cek apakah sudah menemukan model dengan heteroskedastisitas
+  heteroskedastic_models <- Filter(function(m) m$bp_pvalue < bp_threshold, candidate_models)
+  if (length(heteroskedastic_models) >= 5) {
+    cat("Ditemukan", length(heteroskedastic_models), "model dengan heteroskedastisitas. Menghentikan pencarian.\n")
+    break
+  }
+}
+
+# Filter model-model dengan heteroskedastisitas (BP test < 0.05)
+heteroskedastic_models <- Filter(function(m) m$bp_pvalue < bp_threshold, candidate_models)
+
+# Jika ada model dengan heteroskedastisitas, urutkan berdasarkan AIC
+if (length(heteroskedastic_models) > 0) {
+  sorted_models <- heteroskedastic_models[order(sapply(heteroskedastic_models, function(m) m$aic))]
+  
+  # Tampilkan 5 model terbaik (atau kurang jika tidak ada 5)
+  cat("\nModel-model dengan heteroskedastisitas (BP test < 0.05), diurutkan berdasarkan AIC:\n\n")
+  
+  for (i in 1:min(5, length(sorted_models))) {
+    model <- sorted_models[[i]]
+    cat("Model", i, ":\n")
+    print(model$formula)
+    cat("AIC:", model$aic, "\n")
+    cat("Max VIF:", model$max_vif, "\n")
+    cat("BP test p-value:", model$bp_pvalue, "\n\n")
+    
+    # Tampilkan ringkasan model
+    cat("Ringkasan model:\n")
+    print(summary(model$model))
+    
+    # Tampilkan VIF
+    cat("VIF:\n")
+    print(vif(model$model))
+    cat("\n-------------------------------------------\n\n")
+  }
+  
+  # Simpan model terbaik untuk kemudahan akses
+  best_model <- sorted_models[[1]]
+  
+} else {
+  cat("Tidak ditemukan model yang memenuhi kriteria heteroskedastisitas dengan VIF < 10.\n")
+  cat("Mencoba dengan kriteria VIF yang lebih longgar...\n\n")
+  
+  # Coba dengan VIF threshold yang lebih tinggi
+  vif_threshold <- 15
+  
+  # Evaluasi ulang dengan VIF threshold yang lebih tinggi
+  for (size in min_vars:max_vars) {
+    cat("Mengevaluasi kombinasi dengan", size, "variabel (VIF < 15)...\n")
+    combinations <- generate_combinations(all_vars, size)
+    
+    # Tampilkan progress
+    total_combinations <- length(combinations)
+    cat("Total", total_combinations, "kombinasi untuk dievaluasi\n")
+    
+    # Untuk menghemat waktu, kita bisa menggunakan sampling jika kombinasinya terlalu banyak
+    if (total_combinations > 1000) {
+      set.seed(123) # Untuk reproduksibilitas
+      sample_size <- min(1000, total_combinations)
+      combinations <- sample(combinations, sample_size)
+      cat("Terlalu banyak kombinasi, mengambil sampel", sample_size, "kombinasi secara acak\n")
+      total_combinations <- sample_size
+    }
+    
+    for (i in 1:total_combinations) {
+      if (i %% 50 == 0) cat("Progress:", i, "/", total_combinations, "\n")
+      
+      vars <- combinations[[i]]
+      formula_str <- paste("Penemuan ~", paste(vars, collapse = " + "))
+      
+      # Lewati jika model sudah dievaluasi
+      if (formula_str %in% names(candidate_models)) next
+      
+      formula_obj <- as.formula(formula_str)
+      
+      # Evaluasi model
+      eval_result <- evaluate_model(formula_obj, datapnjawa)
+      
+      # Simpan hasil jika VIF di bawah threshold baru
+      if (!is.null(eval_result$model) && eval_result$max_vif < vif_threshold) {
+        candidate_models[[formula_str]] <- eval_result
+      }
+    }
+    
+    # Cek apakah sudah menemukan model dengan heteroskedastisitas
+    heteroskedastic_models <- Filter(function(m) m$bp_pvalue < bp_threshold, candidate_models)
+    if (length(heteroskedastic_models) >= 5) {
+      cat("Ditemukan", length(heteroskedastic_models), "model dengan heteroskedastisitas. Menghentikan pencarian.\n")
+      break
+    }
+  }
+  
+  heteroskedastic_models <- Filter(function(m) m$bp_pvalue < bp_threshold, candidate_models)
+  
+  if (length(heteroskedastic_models) > 0) {
+    sorted_models <- heteroskedastic_models[order(sapply(heteroskedastic_models, function(m) m$aic))]
+    
+    # Tampilkan 5 model terbaik dengan VIF longgar
+    cat("\nModel-model dengan heteroskedastisitas (BP test < 0.05), VIF < 15:\n\n")
+    
+    for (i in 1:min(5, length(sorted_models))) {
+      model <- sorted_models[[i]]
+      cat("Model", i, ":\n")
+      print(model$formula)
+      cat("AIC:", model$aic, "\n")
+      cat("Max VIF:", model$max_vif, "\n")
+      cat("BP test p-value:", model$bp_pvalue, "\n\n")
+      
+      # Tampilkan ringkasan model
+      cat("Ringkasan model:\n")
+      print(summary(model$model))
+      
+      # Tampilkan VIF
+      cat("VIF:\n")
+      print(vif(model$model))
+      cat("\n-------------------------------------------\n\n")
+    }
+  } else {
+    cat("Tidak ditemukan model dengan heteroskedastisitas bahkan dengan VIF < 15.\n")
+    
+    # Sebagai alternatif terakhir, coba tampilkan model dengan VIF tertinggi tapi masih < 20
+    vif_threshold <- 20
+    candidate_models_filtered <- Filter(function(m) m$max_vif < vif_threshold, candidate_models)
+    
+    if (length(candidate_models_filtered) > 0) {
+      # Urutkan berdasarkan p-value BP test (dari terkecil ke terbesar)
+      sorted_by_bp <- candidate_models_filtered[order(sapply(candidate_models_filtered, function(m) m$bp_pvalue))]
+      
+      cat("\nAlternatif: Model-model dengan p-value BP test terendah (VIF < 20):\n\n")
+      
+      for (i in 1:min(3, length(sorted_by_bp))) {
+        model <- sorted_by_bp[[i]]
+        cat("Model", i, ":\n")
+        print(model$formula)
+        cat("AIC:", model$aic, "\n")
+        cat("Max VIF:", model$max_vif, "\n")
+        cat("BP test p-value:", model$bp_pvalue, "\n\n")
+        
+        # Tampilkan ringkasan model
+        cat("Ringkasan model:\n")
+        print(summary(model$model))
+        
+        # Tampilkan VIF
+        cat("VIF:\n")
+        print(vif(model$model))
+        cat("\n-------------------------------------------\n\n")
+      }
+    }
+  }
+}
+
+# Tampilkan pesan penutup
+cat("\nModel-model dengan BP test p-value < 0.05 memberikan justifikasi kuat untuk menggunakan GWNBR.")
+cat("\nAnda dapat memilih model dengan AIC terendah dan VIF yang masih dapat diterima.")
+cat("\nModel dengan minimal 7 variabel prediktor akan memberikan analisis yang lebih komprehensif.")
+```
+### Versi With R2
+```{r}
+# Load library yang diperlukan
+library(MASS)      # Untuk glm.nb
+library(car)       # Untuk vif
+library(lmtest)    # Untuk bptest
+
+# Fungsi untuk mengevaluasi model berdasarkan VIF, BP test, dan McFadden R2 (METODE MANUAL)
+evaluate_model <- function(formula, data) {
+  model <- try(glm.nb(formula, data = data), silent = TRUE)
+  
+  if(inherits(model, "try-error")) {
+    return(list(
+      formula = formula,
+      model = NULL,
+      max_vif = Inf,
+      bp_pvalue = 1,
+      aic = Inf,
+      mcfadden_r2 = -Inf
+    ))
+  }
+  
+  # Hitung VIF
+  vif_values <- try(vif(model), silent = TRUE)
+  if(inherits(vif_values, "try-error")) {
+    max_vif <- Inf
+  } else {
+    max_vif <- max(vif_values)
+  }
+  
+  # Hitung BP test p-value
+  bp_test <- try(bptest(model), silent = TRUE)
+  if(inherits(bp_test, "try-error")) {
+    bp_pvalue <- 1
+  } else {
+    bp_pvalue <- bp_test$p.value
+  }
+  
+  # Hitung AIC
+  aic <- AIC(model)
+  
+  # Hitung McFadden's R-squared menggunakan metode manual dari user
+  mcfadden_r2 <- -Inf # Default jika error
+  
+  try({
+    # Ekstrak komponen dari model yang sedang dievaluasi
+    datay <- as.matrix(model$y)
+    datax <- model.matrix(model)
+    tetanb <- model$theta
+    betanb <- as.matrix(model$coefficients)
+    
+    # Hitung mu untuk model nol (hanya intercept)
+    muw <- as.matrix(rep(exp(betanb[1]), nrow(datay)))
+    
+    # Perhitungan slr sesuai kode user
+    slr <- matrix(0, nrow(datay), 1)
+    for(i in 1:nrow(datay)){
+      if (datay[i] > 0) {
+        for(r in 1:datay[i]){
+            slr[i] <- slr[i] + log(r + (1 / tetanb))
+        }
+      }
+    }
+
+    # Hitung Lw (Log-likelihood model nol)
+    Lw <- sum(slr - lgamma(datay + 1) + datay * log(tetanb * muw) - (datay + (1 / tetanb)) * log(1 + tetanb * muw))
+    
+    # Hitung mu untuk model lengkap
+    muo <- exp(datax %*% betanb)
+    
+    # Hitung Lo (Log-likelihood model lengkap)
+    Lo <- sum(slr - lgamma(datay + 1) + datay * log(tetanb * muo) - (datay + (1 / tetanb)) * log(1 + tetanb * muo))
+    
+    # Hitung McFadden R-squared
+    if (is.finite(Lo) && is.finite(Lw) && Lw != 0) {
+      mcfadden_r2 <- 1 - (Lo / Lw)
+    }
+  }, silent = TRUE)
+  
+
+  return(list(
+    formula = formula,
+    model = model,
+    max_vif = max_vif,
+    bp_pvalue = bp_pvalue,
+    aic = aic,
+    mcfadden_r2 = mcfadden_r2
+  ))
+}
+
+# Daftar semua variabel prediktor potensial, kecuali Imunisasi
+all_vars <- c("NDVI", "NTL", 
+              "Kemiskinan","Kepadatan","CurahHujanSum","Sanitasi", "AirMinum", "GiziKurang", 
+              "IMD", "K6","RasioPuskesmas","RokokPerkapita")
+
+# Inisialisasi
+vif_threshold <- 7 # Batas VIF yang dapat diterima
+bp_threshold <- 0.05 # Batas p-value BP test yang diinginkan
+candidate_models <- list()
+
+# Coba kombinasi dengan minimal 8 variabel
+min_vars <- 6
+max_vars <- min(10, length(all_vars))  # Batasi hingga 10 variabel untuk menghindari overfitting
+
+# Fungsi untuk menghasilkan semua kombinasi
+generate_combinations <- function(vars, size) {
+  combn(vars, size, simplify = FALSE)
+}
+
+# Evaluasi model untuk berbagai kombinasi variabel
+for (size in min_vars:max_vars) {
+  cat("Mengevaluasi kombinasi dengan", size, "variabel...\n")
+  combinations <- generate_combinations(all_vars, size)
+  
+  total_combinations <- length(combinations)
+  cat("Total", total_combinations, "kombinasi untuk dievaluasi\n")
+  
+  if (total_combinations > 1000) {
+    set.seed(123)
+    sample_size <- min(1000, total_combinations)
+    combinations <- sample(combinations, sample_size)
+    cat("Terlalu banyak kombinasi, mengambil sampel", sample_size, "kombinasi secara acak\n")
+    total_combinations <- sample_size
+  }
+  
+  for (i in 1:total_combinations) {
+    if (i %% 50 == 0) cat("Progress:", i, "/", total_combinations, "\n")
+    
+    vars <- combinations[[i]]
+    formula_str <- paste("Penemuan ~", paste(vars, collapse = " + "))
+    formula_obj <- as.formula(formula_str)
+    
+    eval_result <- evaluate_model(formula_obj, datapnjawa)
+    
+    if (!is.null(eval_result$model) && eval_result$max_vif < vif_threshold) {
+      candidate_models[[formula_str]] <- eval_result
+    }
+  }
+  
+  heteroskedastic_models <- Filter(function(m) m$bp_pvalue < bp_threshold, candidate_models)
+  if (length(heteroskedastic_models) >= 5) {
+    cat("Ditemukan", length(heteroskedastic_models), "model dengan heteroskedastisitas. Menghentikan pencarian.\n")
+    break
+  }
+}
+
+# Filter model-models dengan heteroskedastisitas (BP test < 0.05)
+heteroskedastic_models <- Filter(function(m) m$bp_pvalue < bp_threshold, candidate_models)
+
+# Jika ada model dengan heteroskedastisitas, urutkan berdasarkan McFadden R2
+if (length(heteroskedastic_models) > 0) {
+  # Urutkan model berdasarkan McFadden R2 secara menurun (tertinggi ke terendah)
+  sorted_models <- heteroskedastic_models[order(sapply(heteroskedastic_models, function(m) m$mcfadden_r2), decreasing = TRUE)]
+  
+  cat("\nModel-models dengan heteroskedastisitas (BP test < 0.05), diurutkan berdasarkan McFadden R2 (tertinggi):\n\n")
+  
+  for (i in 1:min(5, length(sorted_models))) {
+    model <- sorted_models[[i]]
+    cat("Model", i, ":\n")
+    print(model$formula)
+    cat("McFadden R2:", model$mcfadden_r2, "\n")
+    cat("AIC:", model$aic, "\n")
+    cat("Max VIF:", model$max_vif, "\n")
+    cat("BP test p-value:", model$bp_pvalue, "\n\n")
+    
+    cat("Ringkasan model:\n")
+    print(summary(model$model))
+    
+    cat("VIF:\n")
+    print(vif(model$model))
+    cat("\n-------------------------------------------\n\n")
+  }
+  
+  best_model <- sorted_models[[1]]
+  
+} else {
+  cat("Tidak ditemukan model yang memenuhi kriteria heteroskedastisitas dengan VIF < 7.\n")
+  cat("Mencoba dengan kriteria VIF yang lebih longgar (VIF < 15)...\n\n")
+  
+  vif_threshold <- 15
+  
+  for (size in min_vars:max_vars) {
+    cat("Mengevaluasi kombinasi dengan", size, "variabel (VIF < 15)...\n")
+    combinations <- generate_combinations(all_vars, size)
+    
+    total_combinations <- length(combinations)
+    cat("Total", total_combinations, "kombinasi untuk dievaluasi\n")
+    
+    if (total_combinations > 1000) {
+      set.seed(123)
+      sample_size <- min(1000, total_combinations)
+      combinations <- sample(combinations, sample_size)
+      cat("Terlalu banyak kombinasi, mengambil sampel", sample_size, "kombinasi secara acak\n")
+      total_combinations <- sample_size
+    }
+    
+    for (i in 1:total_combinations) {
+      if (i %% 50 == 0) cat("Progress:", i, "/", total_combinations, "\n")
+      
+      vars <- combinations[[i]]
+      formula_str <- paste("Penemuan ~", paste(vars, collapse = " + "))
+      
+      if (formula_str %in% names(candidate_models)) next
+      
+      formula_obj <- as.formula(formula_str)
+      eval_result <- evaluate_model(formula_obj, datapnjawa)
+      
+      if (!is.null(eval_result$model) && eval_result$max_vif < vif_threshold) {
+        candidate_models[[formula_str]] <- eval_result
+      }
+    }
+    
+    heteroskedastic_models <- Filter(function(m) m$bp_pvalue < bp_threshold, candidate_models)
+    if (length(heteroskedastic_models) >= 5) {
+      cat("Ditemukan", length(heteroskedastic_models), "model dengan heteroskedastisitas. Menghentikan pencarian.\n")
+      break
+    }
+  }
+  
+  heteroskedastic_models <- Filter(function(m) m$bp_pvalue < bp_threshold, candidate_models)
+  
+  if (length(heteroskedastic_models) > 0) {
+    # Urutkan berdasarkan McFadden R2 (tertinggi ke terendah)
+    sorted_models <- heteroskedastic_models[order(sapply(heteroskedastic_models, function(m) m$mcfadden_r2), decreasing = TRUE)]
+    
+    cat("\nModel-models dengan heteroskedastisitas (BP test < 0.05), VIF < 15, diurutkan berdasarkan McFadden R2 (tertinggi):\n\n")
+    
+    for (i in 1:min(5, length(sorted_models))) {
+      model <- sorted_models[[i]]
+      cat("Model", i, ":\n")
+      print(model$formula)
+      cat("McFadden R2:", model$mcfadden_r2, "\n")
+      cat("AIC:", model$aic, "\n")
+      cat("Max VIF:", model$max_vif, "\n")
+      cat("BP test p-value:", model$bp_pvalue, "\n\n")
+      
+      cat("Ringkasan model:\n")
+      print(summary(model$model))
+      
+      cat("VIF:\n")
+      print(vif(model$model))
+      cat("\n-------------------------------------------\n\n")
+    }
+  } else {
+    cat("Tidak ditemukan model dengan heteroskedastisitas bahkan dengan VIF < 15.\n")
+    
+    vif_threshold <- 20
+    candidate_models_filtered <- Filter(function(m) m$max_vif < vif_threshold, candidate_models)
+    
+    if (length(candidate_models_filtered) > 0) {
+      sorted_by_bp <- candidate_models_filtered[order(sapply(candidate_models_filtered, function(m) m$bp_pvalue))]
+      
+      cat("\nAlternatif: Model-models dengan p-value BP test terendah (VIF < 20):\n\n")
+      
+      for (i in 1:min(3, length(sorted_by_bp))) {
+        model <- sorted_by_bp[[i]]
+        cat("Model", i, ":\n")
+        print(model$formula)
+        cat("McFadden R2:", model$mcfadden_r2, "\n")
+        cat("AIC:", model$aic, "\n")
+        cat("Max VIF:", model$max_vif, "\n")
+        cat("BP test p-value:", model$bp_pvalue, "\n\n")
+        
+        cat("Ringkasan model:\n")
+        print(summary(model$model))
+        
+        cat("VIF:\n")
+        print(vif(model$model))
+        cat("\n-------------------------------------------\n\n")
+      }
+    }
+  }
+}
+
+# Tampilkan pesan penutup
+cat("\nModel-models dengan BP test p-value < 0.05 memberikan justifikasi kuat untuk menggunakan GWNBR.")
+cat("\nAnda dapat memilih model dengan McFadden R2 tertinggi dan VIF yang masih dapat diterima.")
+cat("\nModel dengan minimal 7 variabel prediktor akan memberikan analisis yang lebih komprehensif.") 
+```
+
+## Poisson Model
+
+```{r}
+model_poisson <- glm(datapnjawa$Penemuan ~ GiziKurang + IMD + RokokPerkapita + Kepadatan + AirMinumLayak + Sanitasi, data = datapnjawa, poisson(link="log"))
+summary(model_poisson)
+vif(model_poisson)
+library(AER)
+dispersiontest(model_poisson)
+```
+
+## Negative Binomial Model
+
+```{r}
+#model_nbr<- glm.nb(datapnjawa$Penemuan ~  RokokPerkapita + AirMinum + Sanitasi + IMD + Kepadatan + GiziKurang, data = datapnjawa)
+model_nbr<- glm.nb(datapnjawa$Penemuan ~ GiziKurang + IMD + RokokPerkapita + Kepadatan + AirMinumLayak + Sanitasi, data = datapnjawa)
+summary(model_nbr)
+vif(model_nbr)
+bptest(model_nbr)
+```
+
+# Pemodelan GWNBR
+
+## Persiapan
+
+### Jarak
+
+```{r}
+lat=datapnjawa$LatitudeOSM
+lat<-as.matrix(lat) 
+i<-nrow(lat) 
+ 
+long=datapnjawa$LongitudeOSM
+long<-as.matrix(long) 
+j<-nrow(long) 
+ 
+jarak<-matrix(nrow=119,ncol=119) 
+for(i in 1:119) 
+  for(j in 1:119){jarak[i,j]=sqrt((lat[i,]-lat[j,])**2+(long[i,]-long[j,])**2)} 
+ 
+write.csv(jarak,"jarak.csv")
+```
+
+### Bandwidth
+#### Adaptive Bisquare
+```{r}
+library(spgwr) 
+bdwth_Bisq<-ggwr.sel(datapnjawa$Penemuan ~ GiziKurang + IMD + RokokPerkapita + Kepadatan + AirMinumLayak + Sanitasi, data = datapnjawa,coords=cbind(datapnjawa$LongitudeOSM,datapnjawa$LatitudeOSM), adapt=TRUE, gweight=gwr.bisquare) 
+GRTGG<-ggwr(datapnjawa$Penemuan ~ GiziKurang + IMD + RokokPerkapita + Kepadatan + AirMinumLayak + Sanitasi, data = datapnjawa,coords=cbind(datapnjawa$LongitudeOSM,datapnjawa$LatitudeOSM), adapt=bdwth_Bisq, gweight=gwr.bisquare)
+GRTGG$bandwidth 
+#pembobot spasial
+bdwth_Bisq<- GRTGG$bandwidth 
+bdwth_Bisq<- as.matrix(bdwth_Bisq) 
+bdwth_Bisq
+i<-nrow(bdwth_Bisq) 
+pembobotB<-matrix(nrow=119,ncol=119) 
+for(i in 1:119) 
+for(j in 1:119) 
+{pembobotB[i,j]=(1-(jarak[i,j]/bdwth_Bisq[i,])**2)**2 
+pembobotB[i,j]<-ifelse(jarak[i,j]<bdwth_Bisq[i,],pembobotB[i,j],0)} 
+write.table(pembobotB,file="pembobotB.csv",sep=",")
+View(pembobotB)
+```
+#### Adaptive Gaussian
+```{r}
+library(spgwr)
+
+# 1. Seleksi bandwidth menggunakan Gaussian kernel
+bdwth_Gauss <- ggwr.sel(datapnjawa$Penemuan ~ GiziKurang + IMD + RokokPerkapita + 
+                          Kepadatan + AirMinumLayak + Sanitasi,
+                        data = datapnjawa,
+                        coords = cbind(datapnjawa$LongitudeOSM, datapnjawa$LatitudeOSM),
+                        adapt = TRUE,
+                        gweight = gwr.Gauss)  # Gunakan Gaussian kernel
+
+# 2. Jalankan model GWR dengan kernel Gaussian
+GRTGG_Gauss <- ggwr(datapnjawa$Penemuan ~ GiziKurang + IMD + RokokPerkapita + 
+                      Kepadatan + AirMinumLayak + Sanitasi,
+                    data = datapnjawa,
+                    coords = cbind(datapnjawa$LongitudeOSM, datapnjawa$LatitudeOSM),
+                    adapt = bdwth_Gauss,
+                    gweight = gwr.Gauss)
+
+# 3. Ambil bandwidth-nya (per observasi)
+bdwth_Gauss <- GRTGG_Gauss$bandwidth
+bdwth_Gauss <- as.matrix(bdwth_Gauss)
+
+# 4. Hitung pembobot spasial dengan kernel Gaussian
+pembobotG <- matrix(nrow = 119, ncol = 119)
+
+for(i in 1:119) {
+  for(j in 1:119) {
+    pembobotG[i, j] <- exp(-(jarak[i, j]^2) / (bdwth_Gauss[i, 1]^2))
+  }
+}
+
+# 5. Simpan ke file CSV
+write.table(pembobotG, file = "pembobotG.csv", sep = ",", row.names = FALSE, col.names = FALSE)
+```
+
+## Rumus Utama
+
+```{r}
+bisalahori = function(X,y,W1,phi1,b1){
+        beta= matrix(c(0),25,8,byrow=TRUE)
+        beta[1,1]=phi1
+        beta[1,2:8]=c(b1)
+        satu<-rep(1,119)
+        satu<-as.matrix(satu)
+        bxx <- c(b1)
+        b01 <- rbind(c(phi1,c(b1)))
+        for(i in 1:25){
+                Xb1<-as.matrix(X)%*%as.matrix(bxx)
+                mu1<- exp(Xb1)
+                delta11<-((log(1+phi1*mu1)-digamma(y+(1/phi1))+digamma(1/phi1))/phi1^2)+((y-mu1)/((1+phi1*mu1)*phi1))
+                delta11<-as.matrix(delta11)
+                p11<-t(satu)%*%W1%*%delta11
+                p11<- as.matrix(p11)
+                delta21 <- (y-mu1)/(1+phi1*mu1)
+                delta21 <- as.matrix(delta21)
+                p21 <- t(X)%*%as.matrix(W1)%*%delta21
+                p21 <- as.matrix(p21)
+                gt1 <- rbind(p11,p21)
+                delta31 <- ((trigamma(y+(1/phi1))-trigamma(1/phi1))/phi1^4)+((2*digamma(y+(1/phi1))-2*digamma(1/phi1)-2*log(1+phi1*mu1))/phi1^3)+((2*mu1)/(phi1^2*(1+phi1*mu1)))+(((y+(1/phi1))*mu1^2)/(1+phi1*mu1)^2)-(y/phi1^2)
+                delta31<-as.matrix(delta31)
+                p31 <- t(satu)%*%W1%*%delta31
+                p31 <- as.matrix(p31)
+                delta41 <- mu1*(mu1-y)/(1+phi1*mu1)^2
+                delta41 <- as.matrix(delta41)
+                p41 <- t(X)%*%W1%*%delta41
+                p41 <- as.matrix(p41)
+                h11 <- rbind(p31,p41)
+                delta51 <- mu1*(phi1*y+1)/(1+phi1*mu1)^2
+                delta51 <- t(delta51)
+                delta51 <- c(delta51)
+                delta51 <- as.matrix(diag(delta51))
+                p51 <- t(X)%*%as.matrix(W1)%*%delta51%*%as.matrix(X)
+                p51 <- -1*p51
+                p51 <- as.matrix(p51)
+                h21 <- rbind(t(p41),p51)
+                H1 <- cbind(h11,h21)
+                HI1 <- ginv(H1)
+                beta[i,]<-(t(b01)-HI1%*%gt1)
+                phi1 <- beta[i,1] #RBP
+                b01 <- t(beta[i,]) #RBP
+                bxx <- beta[i, 2:8]
+
+        }
+        return(list(beta=beta,hessian=H1))
+}
+
+gwnbrori <- function(x,y,W,teta){
+        beta <- ginv(t(x)%*%as.matrix(x))%*%t(x)%*%as.matrix(y)
+        #beta <- as.matrix(modelnegbin$coefficients)
+        beta <- as.matrix(model_nbr$coefficients) #RBP
+        parameter <- matrix(c(0),nrow(x),ncol(x)+1,byrow=T) 
+        zhit <- matrix(c(0),nrow(x),ncol(x),byrow=T)
+        for(i in 1:119){
+                ww <- as.matrix(diag(W[i,]))
+                hit <- bisalahori(x,y,ww,teta,beta)
+                parameter[i,]<- hit$beta[25,]
+                invh <- -ginv(as.matrix(hit$hessian))
+                for(j in 1:ncol(x)){
+                        zhit[i,j]<- parameter[i,j+1]/sqrt(invh[j+1,j+1])
+                }
+        }
+        return(list(koefisien=parameter,Z_hitung=zhit))
+}
+```
+
+## Implementasi Rumus
+
+```{r}
+summary(model_nbr)
+#xx <- datapnjawa[,c(11 ,5, 17, 16, 18, 24)];xx #Model 3
+#xx <- datapnjawa[,c(14 ,15, 17, 16, 18, 24)];xx #Model Baru 4
+#xx <- datapnjawa[,c(20 ,15, 17, 16, 18, 24)];xx #Model Baru 6 
+xx <- datapnjawa[,c(18,20, 24, 15, 35, 16)];xx #Model Baru 8
+#xx <- datapnjawa[,c(10 ,15, 16, 20, 23, 24)];xx
+#xx <- datapnjawa[,c(20 ,15, 23, 16, 18, 24)];xx #Model Baru 7
+#xx <- datapnjawa[,c(14 ,15, 23, 16, 18, 24)];xx #Model Baru 5
+#xx <- datapnjawa[,c(7 ,5, 17, 16, 18, 24, 13, 23)];xx #Model 3 + Rasio Puskeas
+#xx <- datapnjawa[,c(11 ,24, 13, 16, 15, 23)];xx #Model 4
+y <- datapnjawa[,3];y
+x <- as.matrix(cbind(1,xx));x
+phx1 <- model_nbr$theta;phx1
+bobot1 <- pembobotB
+bobot1
+modgaus <- gwnbrori(x,y,bobot1,phx1)
+modgaus$Z_hitung
+modgaus$koefisien
+```
+
+## Klasifikasi Signifikansi Variabel Parsial
+```{r}
+klasifikasi_signifikan <- function(z_matrix, threshold = 1.96) {
+  apply(z_matrix, c(1, 2), function(z) {
+    if (is.na(z)) return(NA)
+    else if (z >= threshold) return("Signifikan (+)")
+    else if (z <= -threshold) return("Signifikan (-)")
+    else return("Tidak Signifikan")
+  })
+}
+z_matrix <- modgaus$Z_hitung
+hasil_klasifikasi <- klasifikasi_signifikan(z_matrix)
+hasil_klasifikasi
+```
+## Summary koefisien GWNBR
+```{r}
+koefisien_matrix <- modgaus$koefisien
+
+min_values <- apply(koefisien_matrix, 2, min)
+max_values <- apply(koefisien_matrix, 2, max)
+
+final_summary_table <- data.frame(
+  "Variabel" = c("Theta (θ)", "Intercept", "Gizi Kurang", "Persentase Bayi dengan IMD", "Rokok Perkapita", "Kepadatan Penduduk", "Air Minum Layak", "Sanitasi Layak"),
+  "Min Value" = min_values,
+  "Max Value" = max_values,
+  check.names = FALSE # Mencegah R mengubah spasi menjadi titik
+)
+
+final_summary_table$`Min Value` <- round(final_summary_table$`Min Value`, 5)
+final_summary_table$`Max Value` <- round(final_summary_table$`Max Value`, 5)
+
+print("Tabel Ringkasan Koefisien Lokal GWNBR")
+
+rownames(final_summary_table) <- NULL 
+print(final_summary_table)
+```
+## Tabel Koefisien dan Z-Hitung GWNBR
+```{r}
+# Load the writexl package
+library(writexl)
+
+# Assuming modgaus$koefisien and modgaus$Z_hitung are matrices with the described structure
+
+# Extracting the coefficient and Z-score matrices
+koefisien_matrix <- modgaus$koefisien
+z_hitung_matrix <- modgaus$Z_hitung
+
+# Define variable names
+variable_names <- c("Theta (θ)", "Intercept", "Gizi Kurang", "Persentase Bayi dengan IMD", "Rokok Perkapita", "Kepadatan Penduduk", "Air Minum Layak", "Sanitasi Layak")
+
+# Create a detailed data frame for each region
+detailed_table <- data.frame(
+  "Region" = 1:nrow(koefisien_matrix), # Assuming each row corresponds to a region
+  "Theta (θ)" = koefisien_matrix[, 1],
+  "Intercept" = koefisien_matrix[, 2],
+  "Intercept Z" = z_hitung_matrix[, 1],
+  "Gizi Kurang Koef" = koefisien_matrix[, 3],
+  "Gizi Kurang Z" = z_hitung_matrix[, 2],
+  "Persentase Bayi dengan IMD Koef" = koefisien_matrix[, 4],
+  "Persentase Bayi dengan IMD Z" = z_hitung_matrix[, 3],
+  "Rokok Perkapita Koef" = koefisien_matrix[, 5],
+  "Rokok Perkapita Z" = z_hitung_matrix[, 4],
+  "Kepadatan Penduduk Koef" = koefisien_matrix[, 6],
+  "Kepadatan Penduduk Z" = z_hitung_matrix[, 5],
+  "Air Minum Layak Koef" = koefisien_matrix[, 7],
+  "Air Minum Layak Z" = z_hitung_matrix[, 6],
+  "Sanitasi Layak Koef" = koefisien_matrix[, 8],
+  "Sanitasi Layak Z" = z_hitung_matrix[, 7],
+  check.names = FALSE # Prevent R from changing spaces to dots
+)
+
+# Print the detailed table
+print("Tabel Koefisien dan Z-hitung Lokal GWNBR untuk Setiap Wilayah")
+print(detailed_table)
+
+# Write the detailed table to an Excel file
+file_path <- "D:/STIS/SKRIPSI/Pengolahan/KoefGWNBR_ZHitung.xlsx"
+write_xlsx(detailed_table, path = file_path)
+
+print(paste("Data has been written to", file_path))
+```
+
+## Membuat dataframe variabel signifikan
+```{r}
+z_matrix <- modgaus$Z_hitung
+variable_names <- c("Intercept", "X1", "X2", "X3", "X4", "X5", "X6")
+
+
+significant_vars_list <- vector("character", nrow(datapnjawa))
+
+
+for (i in 1:nrow(z_matrix)) {
+  
+
+  z_row <- z_matrix[i, ]
+  significant_indices <- which(abs(z_row) >= 1.96)
+  if (length(significant_indices) > 0) {
+
+    significant_names <- variable_names[significant_indices]
+    significant_vars_list[i] <- paste(significant_names, collapse = ", ")
+    
+  } else {
+    significant_vars_list[i] <- "Tidak Ada Variabel Signifikan"
+  }
+}
+
+datapnjawa$`Variabel Signifikan` <- significant_vars_list
+
+
+print("Verifikasi Hasil Penambahan Kolom:")
+head(datapnjawa[, c("NAMOBJ", "Variabel Signifikan")]) # Ganti "Nama_Kabupaten_Kota" dengan nama kolom wilayah Anda
+
+View(datapnjawa)
+-----------------------------------------------------------------------
+library(writexl)
+file_path <- "D:/STIS/SKRIPSI/Pengolahan/Hasil_Pengolahan.xlsx"
+write_xlsx(
+  datapnjawa,
+  path = file_path
+)
+print(paste("File 'Hasil Pengolahan.xlsx' telah berhasil dibuat di:", file_path))
+```
+
+
+# Evaluasi GWNBR
+```{r}
+## Evaluasi
+# Menghitung nilai F -------------------------------------------------
+# Model Negbin (NB)
+datay <- as.matrix(datapnjawa$Penemuan)
+datax <- as.matrix(cbind(1,xx))
+tetanb <- model_nbr$theta
+betanb <- as.matrix(model_nbr$coefficients)
+muw <- as.matrix(rep(exp(betanb[1]), nrow(datapnjawa)))
+muw
+
+slr <- matrix(0, nrow(datapnjawa), 1)
+for(i in 1:nrow(datapnjawa)){
+    for(r in 1:datay[i]){
+        slr[i] <- slr[i] + log(r + (1 / tetanb))
+    }
+}
+
+Lw <- sum(slr - lgamma(datay + 1) + datay * log(tetanb * muw) - (datay + (1 / tetanb)) * log(1 + tetanb * muw))
+muo <- exp(datax %*% betanb)
+Lo <- sum(slr - lgamma(datay + 1) + datay * log(tetanb * muo) - (datay + (1 / tetanb)) * log(1 + tetanb * muo))
+DNB <- 2 * (Lo - Lw)
+
+# GWNBR -------------------------------------------------------------
+tetagw <- as.matrix(modgaus$koefisien[, 1])
+betagw <- as.matrix(modgaus$koefisien[, 2:8])
+muwgw <- as.matrix(exp(modgaus$koefisien[, 2]))
+muogw <- as.matrix(exp(apply(datax * betagw, 1, sum)))
+
+Dev <- (nrow(datapnjawa) - 1) / DNB
+
+slr <- matrix(0, nrow(datapnjawa), 1)
+for(i in 1:nrow(datapnjawa)){
+    for(r in 1:datay[i]){
+        slr[i] <- slr[i] + log(r + (1 / tetanb))
+    }
+}
+
+slr
+
+Lwgw <- sum(slr - lgamma(datay + 1) + datay * log(tetagw * muwgw) - (datay + (1 / tetagw)) * log(1 + tetagw * muwgw))
+Logw <- sum(slr - lgamma(datay + 1) + datay * log(tetagw * muogw) - (datay + (1 / tetagw)) * log(1 + tetagw * muogw))
+DGWp <- 2 * (Logw - Lwgw)
+DGW <- Dev * (2 * (Logw - Lwgw))
+
+# Kesamaan Model Regresi --------------------------------------------
+Fhit <- DNB / DGWp
+Fhit
+qf(0.05, nrow(datapnjawa) - 1, nrow(datapnjawa) - 1)
+
+# Uji Serentak
+DGW
+qchisq(0.95, ncol(datax) - 1)
+
+# AIC ----------------------------------------------------------------
+ssegw <- sum((datay - muogw)^2)
+ssegw
+aicgw <- nrow(datapnjawa) * log(ssegw / nrow(datapnjawa)) + (2 * ncol(datax))
+aicgw
+
+# AIC model Negbin (global)
+AIC(model_nbr)
+
+```
